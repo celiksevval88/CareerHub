@@ -14,7 +14,7 @@ public class UserController {
     }
 
     @PostMapping
-    public User createUser(@Valid @RequestBody UserRequest request) {
+    public UserResponse createUser(@Valid @RequestBody UserRequest request) {
 
         User user = new User();
 
@@ -24,6 +24,14 @@ public class UserController {
         user.setPassword(request.getPassword());
         user.setRole(request.getRole());
 
-        return userService.createUser(user);
+        User savedUser = userService.createUser(user);
+
+        return new UserResponse(
+                savedUser.getId(),
+                savedUser.getFirstName(),
+                savedUser.getLastName(),
+                savedUser.getEmail(),
+                savedUser.getRole()
+        );
     }
 }
