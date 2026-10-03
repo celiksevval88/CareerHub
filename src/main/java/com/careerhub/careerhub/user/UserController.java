@@ -34,4 +34,13 @@ public class UserController {
                 savedUser.getRole()
         );
     }
+    @PostMapping("/login")
+public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+
+    return userService.login(request);
+}
+@GetMapping("/test")
+public String test() {
+    return "JWT doğrulama başarılı";
+}
 }
