@@ -61,4 +61,26 @@ public StudentProfileResponse getProfile(Authentication authentication) {
             profile.getBio()
     );
 }
+@PutMapping
+public StudentProfileResponse updateProfile(
+        @RequestBody StudentProfileRequest request,
+        Authentication authentication) {
+
+    User user = userService.getUserByEmail(authentication.getName());
+
+    StudentProfile updatedProfile =
+            studentProfileService.updateProfile(user, request);
+
+    return new StudentProfileResponse(
+            updatedProfile.getId(),
+            user.getFirstName(),
+            user.getLastName(),
+            user.getEmail(),
+            updatedProfile.getUniversity(),
+            updatedProfile.getDepartment(),
+            updatedProfile.getClassYear(),
+            updatedProfile.getPhone(),
+            updatedProfile.getBio()
+    );
+}
 }

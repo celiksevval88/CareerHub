@@ -21,4 +21,17 @@ public class StudentProfileService {
         return studentProfileRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Öğrenci profili bulunamadı"));
     }
+    public StudentProfile updateProfile(User user, StudentProfileRequest request) {
+
+    StudentProfile profile = studentProfileRepository.findByUser(user)
+            .orElseThrow(() -> new RuntimeException("Öğrenci profili bulunamadı"));
+
+    profile.setUniversity(request.getUniversity());
+    profile.setDepartment(request.getDepartment());
+    profile.setClassYear(request.getClassYear());
+    profile.setPhone(request.getPhone());
+    profile.setBio(request.getBio());
+
+    return studentProfileRepository.save(profile);
+}
 }
