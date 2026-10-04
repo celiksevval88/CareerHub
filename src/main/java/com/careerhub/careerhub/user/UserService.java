@@ -33,7 +33,10 @@ public class UserService {
         throw new RuntimeException("Email veya şifre hatalı");
     }
 
-    String token = jwtService.generateToken(user.getEmail());
+    String token = jwtService.generateToken(
+        user.getEmail(),
+        user.getRole()
+);
 
 return new LoginResponse(
         "Giriş başarılı",

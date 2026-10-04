@@ -57,4 +57,12 @@ public UserResponse me(Authentication authentication) {
             user.getRole()
     );
 }
+@GetMapping("/student")
+public String student() {
+    return "Student endpointine erişildi";
+}
+@GetMapping("/admin")
+public String admin() {
+    return "Admin endpointine erişildi";
+}
 }
