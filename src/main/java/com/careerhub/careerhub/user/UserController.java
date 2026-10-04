@@ -2,6 +2,7 @@ package com.careerhub.careerhub.user;
 
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/users")
@@ -42,5 +43,18 @@ public LoginResponse login(@Valid @RequestBody LoginRequest request) {
 @GetMapping("/test")
 public String test() {
     return "JWT doğrulama başarılı";
+}
+@GetMapping("/me")
+public UserResponse me(Authentication authentication) {
+
+    User user = userService.getUserByEmail(authentication.getName());
+
+    return new UserResponse(
+            user.getId(),
+            user.getFirstName(),
+            user.getLastName(),
+            user.getEmail(),
+            user.getRole()
+    );
 }
 }
