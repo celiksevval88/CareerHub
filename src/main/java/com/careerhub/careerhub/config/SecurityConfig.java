@@ -29,12 +29,13 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users", "/api/users/login").permitAll()
-                        .requestMatchers("/api/users/student").hasRole("STUDENT")
-                        .requestMatchers("/api/users/admin").hasRole("ADMIN")
-                        .anyRequest().authenticated()
-                )
+               .authorizeHttpRequests(auth -> auth
+        .requestMatchers("/api/users", "/api/users/login").permitAll()
+        .requestMatchers("/api/users/student").hasRole("STUDENT")
+        .requestMatchers("/api/student-profile").hasRole("STUDENT")
+        .requestMatchers("/api/users/admin").hasRole("ADMIN")
+        .anyRequest().authenticated()
+)
 
                 .addFilterBefore(
                         jwtAuthenticationFilter,
