@@ -1,5 +1,6 @@
 package com.careerhub.careerhub.config;
 
+import org.springframework.http.HttpMethod;
 import com.careerhub.careerhub.user.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +36,8 @@ public class SecurityConfig {
         .requestMatchers("/api/student-profile").hasRole("STUDENT")
         .requestMatchers("/api/student-cv").hasRole("STUDENT")
         .requestMatchers("/api/company").hasRole("COMPANY")
+        .requestMatchers(HttpMethod.GET, "/api/job-postings").authenticated()
+        .requestMatchers("/api/job-postings/**").hasRole("COMPANY")
         .requestMatchers("/api/users/admin").hasRole("ADMIN")
         .anyRequest().authenticated()
 )
