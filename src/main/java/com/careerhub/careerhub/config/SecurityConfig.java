@@ -1,9 +1,9 @@
 package com.careerhub.careerhub.config;
 
-import org.springframework.http.HttpMethod;
 import com.careerhub.careerhub.user.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -30,17 +30,47 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-               .authorizeHttpRequests(auth -> auth
-        .requestMatchers("/api/users", "/api/users/login").permitAll()
-        .requestMatchers("/api/users/student").hasRole("STUDENT")
-        .requestMatchers("/api/student-profile").hasRole("STUDENT")
-        .requestMatchers("/api/student-cv").hasRole("STUDENT")
-        .requestMatchers("/api/company").hasRole("COMPANY")
-        .requestMatchers(HttpMethod.GET, "/api/job-postings").authenticated()
-        .requestMatchers("/api/job-postings/**").hasRole("COMPANY")
-        .requestMatchers("/api/users/admin").hasRole("ADMIN")
-        .anyRequest().authenticated()
-)
+                .authorizeHttpRequests(auth -> auth
+
+                        .requestMatchers("/api/users", "/api/users/login")
+                        .permitAll()
+
+                        .requestMatchers("/api/users/student")
+                        .hasRole("STUDENT")
+
+                        .requestMatchers("/api/student-profile")
+                        .hasRole("STUDENT")
+
+                        .requestMatchers("/api/student-cv")
+                        .hasRole("STUDENT")
+
+                        .requestMatchers("/api/company")
+                        .hasRole("COMPANY")
+
+                        .requestMatchers(HttpMethod.GET, "/api/job-postings")
+                        .authenticated()
+
+                        .requestMatchers("/api/job-postings/**")
+                        .hasRole("COMPANY")
+
+                        .requestMatchers(HttpMethod.POST, "/api/job-applications")
+                        .hasRole("STUDENT")
+
+                        .requestMatchers(HttpMethod.GET, "/api/job-applications/student")
+                        .hasRole("STUDENT")
+
+                        .requestMatchers(HttpMethod.GET, "/api/job-applications/company")
+                        .hasRole("COMPANY")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/job-applications/*/status")
+                        .hasRole("COMPANY")
+
+                        .requestMatchers("/api/users/admin")
+                        .hasRole("ADMIN")
+
+                        .anyRequest()
+                        .authenticated()
+                )
 
                 .addFilterBefore(
                         jwtAuthenticationFilter,
