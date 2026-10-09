@@ -9,49 +9,68 @@ public class JobPostingService {
 
     private final JobPostingRepository jobPostingRepository;
 
-    public JobPostingService(JobPostingRepository jobPostingRepository) {
+    public JobPostingService(
+            JobPostingRepository jobPostingRepository) {
+
         this.jobPostingRepository = jobPostingRepository;
     }
 
     public JobPosting createJobPosting(JobPosting jobPosting) {
+
+        Company company = jobPosting.getCompany();
+
+        if (company == null
+                || !"APPROVED".equals(company.getApprovalStatus())) {
+
+            throw new RuntimeException(
+                    "Şirketiniz admin tarafından onaylanmadan ilan oluşturamaz");
+        }
+
         return jobPostingRepository.save(jobPosting);
     }
 
     public List<JobPosting> getCompanyJobPostings(Company company) {
         return jobPostingRepository.findByCompany(company);
     }
+
     public List<JobPosting> getAllJobPostings() {
-    return jobPostingRepository.findAll();
-}
-public JobPosting updateJobPosting(
-        Company company,
-        Long id,
-        JobPostingRequest request) {
-
-    JobPosting jobPosting = jobPostingRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("İlan bulunamadı"));
-
-    if (!jobPosting.getCompany().getId().equals(company.getId())) {
-        throw new RuntimeException("Bu ilanı güncelleme yetkiniz yok");
+        return jobPostingRepository.findAll();
     }
 
-    jobPosting.setTitle(request.getTitle());
-    jobPosting.setType(request.getType());
-    jobPosting.setCity(request.getCity());
-    jobPosting.setWorkType(request.getWorkType());
-    jobPosting.setDescription(request.getDescription());
+    public JobPosting updateJobPosting(
+            Company company,
+            Long id,
+            JobPostingRequest request) {
 
-    return jobPostingRepository.save(jobPosting);
-}
-public void deleteJobPosting(Company company, Long id) {
+        JobPosting jobPosting = jobPostingRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("İlan bulunamadı"));
 
-    JobPosting jobPosting = jobPostingRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("İlan bulunamadı"));
+        if (!jobPosting.getCompany().getId().equals(company.getId())) {
+            throw new RuntimeException(
+                    "Bu ilanı güncelleme yetkiniz yok");
+        }
 
-    if (!jobPosting.getCompany().getId().equals(company.getId())) {
-        throw new RuntimeException("Bu ilanı silme yetkiniz yok");
+        jobPosting.setTitle(request.getTitle());
+        jobPosting.setType(request.getType());
+        jobPosting.setCity(request.getCity());
+        jobPosting.setWorkType(request.getWorkType());
+        jobPosting.setDescription(request.getDescription());
+
+        return jobPostingRepository.save(jobPosting);
     }
 
-    jobPostingRepository.delete(jobPosting);
-}
+    public void deleteJobPosting(Company company, Long id) {
+
+        JobPosting jobPosting = jobPostingRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("İlan bulunamadı"));
+
+        if (!jobPosting.getCompany().getId().equals(company.getId())) {
+            throw new RuntimeException(
+                    "Bu ilanı silme yetkiniz yok");
+        }
+
+        jobPostingRepository.delete(jobPosting);
+    }
 }

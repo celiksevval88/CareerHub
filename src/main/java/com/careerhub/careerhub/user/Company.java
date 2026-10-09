@@ -25,6 +25,9 @@ public class Company {
     @JoinColumn(name = "user_id", unique = true, nullable = false)
     private User user;
 
+    @Column(length = 20)
+    private String approvalStatus = "PENDING";
+
     public Company() {
     }
 
@@ -78,5 +81,13 @@ public class Company {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus == null ? "PENDING" : approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
     }
 }

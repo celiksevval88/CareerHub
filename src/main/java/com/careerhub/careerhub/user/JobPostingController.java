@@ -2,6 +2,7 @@ package com.careerhub.careerhub.user;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -131,5 +132,13 @@ public String deleteJobPosting(
     jobPostingService.deleteJobPosting(company, id);
 
     return "İlan başarıyla silindi";
+}
+@ExceptionHandler(RuntimeException.class)
+public ResponseEntity<String> handleRuntimeException(
+        RuntimeException exception) {
+
+    return ResponseEntity
+            .badRequest()
+            .body(exception.getMessage());
 }
 }
