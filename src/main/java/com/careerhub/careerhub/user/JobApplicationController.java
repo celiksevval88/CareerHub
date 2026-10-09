@@ -3,7 +3,7 @@ package com.careerhub.careerhub.user;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -29,7 +29,7 @@ public class JobApplicationController {
 
     @PostMapping
     public JobApplicationResponse createApplication(
-            @RequestBody JobApplicationRequest request,
+            @Valid @RequestBody JobApplicationRequest request,
             Authentication authentication) {
 
         User student =
