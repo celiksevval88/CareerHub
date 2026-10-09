@@ -2,6 +2,7 @@ package com.careerhub.careerhub.user;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 
 import java.util.List;
@@ -26,7 +27,7 @@ public class JobPostingController {
 
     @PostMapping
     public JobPostingResponse createJobPosting(
-            @RequestBody JobPostingRequest request,
+            @Valid @RequestBody JobPostingRequest request,
             Authentication authentication) {
 
         User user = userService.getUserByEmail(authentication.getName());
@@ -100,7 +101,7 @@ public List<JobPostingResponse> getAllJobPostings() {
 @PutMapping("/{id}")
 public JobPostingResponse updateJobPosting(
         @PathVariable Long id,
-        @RequestBody JobPostingRequest request,
+        @Valid @RequestBody JobPostingRequest request,
         Authentication authentication) {
 
     User user = userService.getUserByEmail(authentication.getName());
