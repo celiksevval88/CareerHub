@@ -1,6 +1,6 @@
 package com.careerhub.careerhub.user;
 
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -142,14 +142,5 @@ public class JobApplicationController {
                 updatedApplication.getStatus(),
                 updatedApplication.getApplicationDate()
         );
-    }
-
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntimeException(
-            RuntimeException exception) {
-
-        return ResponseEntity
-                .badRequest()
-                .body(exception.getMessage());
     }
 }
