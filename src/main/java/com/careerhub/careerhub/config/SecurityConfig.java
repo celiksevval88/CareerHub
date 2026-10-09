@@ -65,6 +65,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/job-applications/*/status")
                         .hasRole("COMPANY")
 
+                        .requestMatchers(HttpMethod.GET, "/api/notifications")
+                        .authenticated()
+
+                        .requestMatchers(HttpMethod.PUT, "/api/notifications/*/read")
+                        .authenticated()
+
                         .requestMatchers("/api/users/admin")
                         .hasRole("ADMIN")
 

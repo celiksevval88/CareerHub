@@ -10,19 +10,27 @@ public class JobApplicationService {
 
     private final JobApplicationRepository jobApplicationRepository;
     private final JobPostingRepository jobPostingRepository;
+    private final NotificationService notificationService;
 
     public JobApplicationService(
             JobApplicationRepository jobApplicationRepository,
-            JobPostingRepository jobPostingRepository) {
+            JobPostingRepository jobPostingRepository,
+            NotificationService notificationService) {
 
         this.jobApplicationRepository = jobApplicationRepository;
         this.jobPostingRepository = jobPostingRepository;
+        this.notificationService = notificationService;
     }
 
-    public JobApplication createApplication(User student, JobPosting jobPosting) {
+    public JobApplication createApplication(
+            User student,
+            JobPosting jobPosting) {
 
-        if (jobApplicationRepository.existsByStudentAndJobPosting(student, jobPosting)) {
-            throw new RuntimeException("Bu ilana daha önce başvurdunuz");
+        if (jobApplicationRepository
+                .existsByStudentAndJobPosting(student, jobPosting)) {
+
+            throw new RuntimeException(
+                    "Bu ilana daha önce başvurdunuz");
         }
 
         JobApplication application = new JobApplication();
@@ -43,17 +51,19 @@ public class JobApplicationService {
         return jobApplicationRepository.findByJobPosting(jobPosting);
     }
 
-    public List<JobApplication> getApplicationsForCompany(Company company) {
+    public List<JobApplication> getApplicationsForCompany(
+            Company company) {
 
-        List<JobApplication> applications = new java.util.ArrayList<>();
+        List<JobApplication> applications =
+                new java.util.ArrayList<>();
 
         List<JobPosting> jobPostings =
                 jobPostingRepository.findByCompany(company);
 
         for (JobPosting jobPosting : jobPostings) {
-
             applications.addAll(
-                    jobApplicationRepository.findByJobPosting(jobPosting)
+                    jobApplicationRepository
+                            .findByJobPosting(jobPosting)
             );
         }
 
@@ -65,18 +75,20 @@ public class JobApplicationService {
             Long applicationId,
             String status) {
 
-        if (!status.equals("BEKLEMEDE")
-                && !status.equals("DEĞERLENDİRİLİYOR")
-                && !status.equals("KABUL_EDİLDİ")
-                && !status.equals("REDDEDİLDİ")) {
+        if (!"BEKLEMEDE".equals(status)
+                && !"DEĞERLENDİRİLİYOR".equals(status)
+                && !"KABUL_EDİLDİ".equals(status)
+                && !"REDDEDİLDİ".equals(status)) {
 
-            throw new RuntimeException("Geçersiz başvuru durumu");
+            throw new RuntimeException(
+                    "Geçersiz başvuru durumu");
         }
 
         JobApplication application =
                 jobApplicationRepository.findById(applicationId)
                         .orElseThrow(() ->
-                                new RuntimeException("Başvuru bulunamadı"));
+                                new RuntimeException(
+                                        "Başvuru bulunamadı"));
 
         if (!application.getJobPosting()
                 .getCompany()
@@ -87,8 +99,27 @@ public class JobApplicationService {
                     "Bu başvuruyu güncelleme yetkiniz yok");
         }
 
+        String previousStatus = application.getStatus();
+
         application.setStatus(status);
 
-        return jobApplicationRepository.save(application);
+        JobApplication updatedApplication =
+                jobApplicationRepository.save(application);
+
+        if (!status.equals(previousStatus)) {
+
+            String message =
+                    application.getJobPosting().getTitle()
+                    + " ilanındaki başvurunuzun durumu "
+                    + status
+                    + " olarak güncellendi.";
+
+            notificationService.createNotification(
+                    application.getStudent(),
+                    message
+            );
+        }
+
+        return updatedApplication;
     }
 }
