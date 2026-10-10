@@ -3,10 +3,11 @@ package com.careerhub.careerhub.user;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-
+import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class JobPostingServiceTest {
@@ -83,4 +84,60 @@ class JobPostingServiceTest {
 
         verify(jobPostingRepository).save(jobPosting);
     }
+    @Test
+void baskaSirketBaskasininIlaniniGuncelleyemez() {
+
+    Company ilanSahibi = mock(Company.class);
+    Company istekYapan = mock(Company.class);
+    JobPosting jobPosting = mock(JobPosting.class);
+
+    when(jobPostingRepository.findById(10L))
+            .thenReturn(Optional.of(jobPosting));
+    when(jobPosting.getCompany()).thenReturn(ilanSahibi);
+    when(ilanSahibi.getId()).thenReturn(1L);
+    when(istekYapan.getId()).thenReturn(2L);
+
+    JobPostingRequest request = new JobPostingRequest();
+
+    RuntimeException exception = assertThrows(
+            RuntimeException.class,
+            () -> jobPostingService.updateJobPosting(
+                    istekYapan, 10L, request)
+    );
+
+    assertEquals(
+            "Bu ilanı güncelleme yetkiniz yok",
+            exception.getMessage()
+    );
+
+    verify(jobPostingRepository, never())
+            .save(any(JobPosting.class));
+}
+
+@Test
+void baskaSirketBaskasininIlaniniSilemez() {
+
+    Company ilanSahibi = mock(Company.class);
+    Company istekYapan = mock(Company.class);
+    JobPosting jobPosting = mock(JobPosting.class);
+
+    when(jobPostingRepository.findById(10L))
+            .thenReturn(Optional.of(jobPosting));
+    when(jobPosting.getCompany()).thenReturn(ilanSahibi);
+    when(ilanSahibi.getId()).thenReturn(1L);
+    when(istekYapan.getId()).thenReturn(2L);
+
+    RuntimeException exception = assertThrows(
+            RuntimeException.class,
+            () -> jobPostingService.deleteJobPosting(istekYapan, 10L)
+    );
+
+    assertEquals(
+            "Bu ilanı silme yetkiniz yok",
+            exception.getMessage()
+    );
+
+    verify(jobPostingRepository, never())
+            .delete(jobPosting);
+}
 }
