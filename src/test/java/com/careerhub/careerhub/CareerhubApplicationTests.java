@@ -72,4 +72,35 @@ class CareerhubApplicationTests {
         request.setRole("STUDENT");
         return request;
     }
+	@Test
+void bosIlanBasligiReddedilmeli() {
+    com.careerhub.careerhub.user.JobPostingRequest request =
+            new com.careerhub.careerhub.user.JobPostingRequest();
+
+    request.setTitle("");
+    request.setType("STAJ");
+    request.setCity("Çorlu");
+    request.setWorkType("HİBRİT");
+    request.setDescription("Test açıklaması");
+
+    assertFalse(validator.validate(request).isEmpty());
+}
+
+@Test
+void bosIlanIdReddedilmeli() {
+    com.careerhub.careerhub.user.JobApplicationRequest request =
+            new com.careerhub.careerhub.user.JobApplicationRequest();
+
+    assertFalse(validator.validate(request).isEmpty());
+}
+
+@Test
+void sifirIlanIdReddedilmeli() {
+    com.careerhub.careerhub.user.JobApplicationRequest request =
+            new com.careerhub.careerhub.user.JobApplicationRequest();
+
+    request.setJobPostingId(0L);
+
+    assertFalse(validator.validate(request).isEmpty());
+}
 }
