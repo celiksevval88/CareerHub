@@ -55,6 +55,23 @@ function App() {
   const [showCompanyProfile, setShowCompanyProfile] = useState(false)
   const [updatingApplicationId, setUpdatingApplicationId] = useState(null)
   const [companyApplicationMessage, setCompanyApplicationMessage] = useState('')
+  // Yeni ilan oluşturma formu
+  const [showCreateJobForm, setShowCreateJobForm] = useState(false)
+  const [isCreatingJob, setIsCreatingJob] = useState(false)
+  const [createJobMessage, setCreateJobMessage] = useState('')
+  const [editingJobId, setEditingJobId] = useState(null)
+  const [isUpdatingJob, setIsUpdatingJob] = useState(false)
+  const [updateJobMessage, setUpdateJobMessage] = useState('')
+  const [deletingJobId, setDeletingJobId] = useState(null)
+  const [deleteJobMessage, setDeleteJobMessage] = useState('')
+
+  const [createJobForm, setCreateJobForm] = useState({
+    title: '',
+    type: 'STAJ',
+    city: '',
+    workType: 'HİBRİT',
+    description: '',
+  })
 
   // Şirketin kendi ilanları
   const [companyJobPostings, setCompanyJobPostings] = useState([])
@@ -131,6 +148,12 @@ function App() {
   async function loadJobPostings() {
     setIsLoadingJobs(true)
     setJobsError('')
+
+    // Diğer öğrenci bölümlerini kapat
+    setShowApplications(false)
+    setShowCv(false)
+
+    // Yalnızca ilanları aç
     setShowJobPostings(true)
 
     try {
@@ -225,6 +248,12 @@ function App() {
   async function loadApplications() {
     setIsLoadingApplications(true)
     setApplicationsError('')
+
+    // Diğer öğrenci bölümlerini kapat
+    setShowJobPostings(false)
+    setShowCv(false)
+
+    // Yalnızca Başvurularım bölümünü aç
     setShowApplications(true)
 
     try {
@@ -266,6 +295,12 @@ function App() {
   async function loadCv() {
     setIsLoadingCv(true)
     setCvError('')
+
+    // Diğer öğrenci bölümlerini kapat
+    setShowJobPostings(false)
+    setShowApplications(false)
+
+    // Yalnızca CV bölümünü aç
     setShowCv(true)
 
     try {
@@ -358,6 +393,13 @@ function App() {
   async function loadCompanyProfile() {
     setIsLoadingCompany(true)
     setCompanyError('')
+
+    // Diğer şirket bölümlerini kapat
+    setShowCompanyJobs(false)
+    setShowCompanyApplications(false)
+    setShowCreateJobForm(false)
+
+    // Yalnızca şirket profilini aç
     setShowCompanyProfile(true)
 
     try {
@@ -399,6 +441,13 @@ function App() {
   async function loadCompanyJobPostings() {
     setIsLoadingCompanyJobs(true)
     setCompanyJobsError('')
+
+    // Diğer açık bölümleri kapat
+    setShowCompanyProfile(false)
+    setShowCompanyApplications(false)
+    setShowCreateJobForm(false)
+
+    // Yalnızca İlanlarım bölümünü aç
     setShowCompanyJobs(true)
 
     try {
@@ -446,6 +495,13 @@ function App() {
   async function loadCompanyApplications() {
     setIsLoadingCompanyApplications(true)
     setCompanyApplicationsError('')
+
+    // Diğer şirket bölümlerini kapat
+    setShowCompanyProfile(false)
+    setShowCompanyJobs(false)
+    setShowCreateJobForm(false)
+
+    // Yalnızca başvuruları aç
     setShowCompanyApplications(true)
 
     try {
@@ -542,7 +598,190 @@ function App() {
       setUpdatingApplicationId(null)
     }
   }
+  // Yeni ilan oluştur
+  async function createJobPosting(event) {
+    event.preventDefault()
+    setIsCreatingJob(true)
+    setCreateJobMessage('')
 
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      if (!token) {
+        setCreateJobMessage(
+          'Oturum bilgisi bulunamadı. Tekrar giriş yap.',
+        )
+        return
+      }
+
+      const response = await fetch('/api/job-postings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(createJobForm),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setCreateJobMessage(
+          data.message || 'İlan oluşturulamadı. Bilgileri kontrol et.',
+        )
+        return
+      }
+
+      setCreateJobMessage(
+        `"${data.title || createJobForm.title}" ilanı başarıyla oluşturuldu.`,
+      )
+
+      setCreateJobForm({
+        title: '',
+        type: 'STAJ',
+        city: '',
+        workType: 'HİBRİT',
+        description: '',
+      })
+
+      setShowCreateJobForm(false)
+
+      // Şirketin ilan listesini yenile
+      await loadCompanyJobPostings()
+    } catch {
+      setCreateJobMessage(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+    } finally {
+      setIsCreatingJob(false)
+    }
+  }
+  // Mevcut ilanı güncelle
+  async function saveJobChanges(event) {
+    event.preventDefault()
+    setIsUpdatingJob(true)
+    setUpdateJobMessage('')
+
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      if (!token) {
+        setUpdateJobMessage(
+          'Oturum bilgisi bulunamadı. Tekrar giriş yap.',
+        )
+        return
+      }
+
+      if (!editingJobId) {
+        setUpdateJobMessage('Düzenlenecek ilan seçilmedi.')
+        return
+      }
+
+      const response = await fetch(
+        `/api/job-postings/${editingJobId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(createJobForm),
+        },
+      )
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setUpdateJobMessage(
+          data.message || 'İlan güncellenemedi. Bilgileri kontrol et.',
+        )
+        return
+      }
+
+      setCompanyJobPostings((previousJobs) =>
+        previousJobs.map((job) =>
+          job.id === data.id ? data : job,
+        ),
+      )
+
+      setUpdateJobMessage('İlan başarıyla güncellendi.')
+      setShowCreateJobForm(false)
+      setEditingJobId(null)
+
+      setCreateJobForm({
+        title: '',
+        type: 'STAJ',
+        city: '',
+        workType: 'HİBRİT',
+        description: '',
+      })
+
+      await loadCompanyJobPostings()
+    } catch {
+      setUpdateJobMessage(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+    } finally {
+      setIsUpdatingJob(false)
+    }
+  }
+  // Şirketin kendi ilanını sil
+  async function deleteJobPosting(jobId) {
+    const approved = window.confirm(
+      'Bu ilanı silmek istediğine emin misin? Bu işlem geri alınamaz.',
+    )
+
+    if (!approved) {
+      return
+    }
+
+    setDeletingJobId(jobId)
+    setDeleteJobMessage('')
+
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      if (!token) {
+        setDeleteJobMessage(
+          'Oturum bilgisi bulunamadı. Tekrar giriş yap.',
+        )
+        return
+      }
+
+      const response = await fetch(`/api/job-postings/${jobId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const responseText = await response.text()
+
+      if (!response.ok) {
+        setDeleteJobMessage(
+          responseText || 'İlan silinemedi. Tekrar dene.',
+        )
+        return
+      }
+
+      setCompanyJobPostings((previousJobs) =>
+        previousJobs.filter((job) => job.id !== jobId),
+      )
+
+      if (editingJobId === jobId) {
+        setEditingJobId(null)
+        setShowCreateJobForm(false)
+      }
+
+      setDeleteJobMessage('İlan başarıyla silindi.')
+    } catch {
+      setDeleteJobMessage(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+    } finally {
+      setDeletingJobId(null)
+    }
+  }
   // Giriş yapan kullanıcının paneli
   if (currentUser) {
     const roleTitle =
@@ -1011,6 +1250,33 @@ function App() {
                   <h2>Başvurular</h2>
                   <p>İlanlarına gelen başvuruları incele.</p>
                 </article>
+                <article
+                  className="dashboard-card clickable-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    setCreateJobMessage('')
+                    setUpdateJobMessage('')
+                    setShowCompanyProfile(false)
+                    setShowCompanyJobs(false)
+                    setShowCompanyApplications(false)
+                    setShowCreateJobForm(true)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      setCreateJobMessage('')
+                      setShowCompanyProfile(false)
+                      setShowCompanyJobs(false)
+                      setShowCompanyApplications(false)
+                      setShowCreateJobForm(true)
+                    }
+                  }}
+                >
+                  <span className="dashboard-card-icon">+</span>
+                  <h2>Yeni İlan Oluştur</h2>
+                  <p>Yeni bir iş veya staj ilanı yayınla.</p>
+                </article>
               </div>
 
               {showCompanyProfile && (
@@ -1057,6 +1323,11 @@ function App() {
                       Kapat
                     </button>
                   </div>
+                  {deleteJobMessage && (
+                    <p className="status-message" role="status">
+                      {deleteJobMessage}
+                    </p>
+                  )}
 
                   {isLoadingCompanyJobs && <p>İlanların yükleniyor...</p>}
 
@@ -1090,6 +1361,35 @@ function App() {
                             </div>
 
                             <p>{job.description}</p>
+                            <button
+                              type="button"
+                              className="logout-button"
+                              onClick={() => {
+                                setEditingJobId(job.id)
+
+                                setCreateJobForm({
+                                  title: job.title || '',
+                                  type: job.type || 'STAJ',
+                                  city: job.city || '',
+                                  workType: job.workType || 'HİBRİT',
+                                  description: job.description || '',
+                                })
+
+                                setUpdateJobMessage('')
+                                setCreateJobMessage('')
+                                setShowCreateJobForm(true)
+                              }}
+                            >
+                              Düzenle
+                            </button>
+                            <button
+                              type="button"
+                              className="logout-button"
+                              disabled={deletingJobId === job.id}
+                              onClick={() => deleteJobPosting(job.id)}
+                            >
+                              {deletingJobId === job.id ? 'Siliniyor...' : 'Sil'}
+                            </button>
                           </article>
                         ))}
                       </div>
@@ -1193,6 +1493,148 @@ function App() {
                       </div>
                     )}
                 </section>
+              )}
+              {showCreateJobForm && (
+                <section className="job-list-section">
+                  <div className="job-list-heading">
+                    <h2>{editingJobId ? 'İlanı Düzenle' : 'Yeni İlan Oluştur'}</h2>
+
+                    <button
+                      type="button"
+                      className="logout-button"
+                      onClick={() => {
+                        setShowCreateJobForm(false)
+                        setCreateJobMessage('')
+                      }}
+                    >
+                      Kapat
+                    </button>
+                  </div>
+
+                  {createJobMessage && (
+                    <p className="status-message" role="alert">
+                      {createJobMessage}
+                    </p>
+                  )}
+
+                  <form
+                    className="cv-edit-form"
+                    onSubmit={editingJobId ? saveJobChanges : createJobPosting}
+                  >
+                    <label htmlFor="job-title">İlan başlığı</label>
+                    <input
+                      id="job-title"
+                      type="text"
+                      value={createJobForm.title}
+                      onChange={(event) =>
+                        setCreateJobForm({
+                          ...createJobForm,
+                          title: event.target.value,
+                        })
+                      }
+                      placeholder="Örn. Java Backend Stajyeri"
+                      required
+                    />
+
+                    <label htmlFor="job-type">İlan türü</label>
+                    <select
+                      id="job-type"
+                      value={createJobForm.type}
+                      onChange={(event) =>
+                        setCreateJobForm({
+                          ...createJobForm,
+                          type: event.target.value,
+                        })
+                      }
+                      required
+                    >
+                      <option value="STAJ">Staj</option>
+                      <option value="İŞ">İş</option>
+                    </select>
+
+                    <label htmlFor="job-city">Şehir</label>
+                    <input
+                      id="job-city"
+                      type="text"
+                      value={createJobForm.city}
+                      onChange={(event) =>
+                        setCreateJobForm({
+                          ...createJobForm,
+                          city: event.target.value,
+                        })
+                      }
+                      placeholder="Örn. Çorlu"
+                      required
+                    />
+
+                    <label htmlFor="job-work-type">Çalışma şekli</label>
+                    <select
+                      id="job-work-type"
+                      value={createJobForm.workType}
+                      onChange={(event) =>
+                        setCreateJobForm({
+                          ...createJobForm,
+                          workType: event.target.value,
+                        })
+                      }
+                      required
+                    >
+                      <option value="HİBRİT">Hibrit</option>
+                      <option value="OFİSTEN">Ofisten</option>
+                      <option value="UZAKTAN">Uzaktan</option>
+                    </select>
+
+                    <label htmlFor="job-description">İlan açıklaması</label>
+                    <textarea
+                      id="job-description"
+                      rows={5}
+                      value={createJobForm.description}
+                      onChange={(event) =>
+                        setCreateJobForm({
+                          ...createJobForm,
+                          description: event.target.value,
+                        })
+                      }
+                      placeholder="Pozisyonu, görevleri ve aradığınız özellikleri açıklayın."
+                      required
+                    />
+
+                    <div className="cv-form-actions">
+                      <button
+                        type="submit"
+                        className="login-button"
+                        disabled={editingJobId ? isUpdatingJob : isCreatingJob}
+                      >
+                        {editingJobId
+                          ? isUpdatingJob
+                            ? 'Güncelleniyor...'
+                            : 'Değişiklikleri Kaydet'
+                          : isCreatingJob
+                            ? 'İlan kaydediliyor...'
+                            : 'İlanı Yayınla'}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="logout-button"
+                        onClick={() => {
+                          setShowCreateJobForm(false)
+                          setCreateJobMessage('')
+                          setUpdateJobMessage('')
+                          setEditingJobId(null)
+                        }}
+                      >
+                        Vazgeç
+                      </button>
+                    </div>
+                  </form>
+                </section>
+              )}
+
+              {createJobMessage && !showCreateJobForm && (
+                <p className="status-message" role="status">
+                  {createJobMessage}
+                </p>
               )}
             </>
           ) : (
