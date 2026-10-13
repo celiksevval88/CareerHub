@@ -14,6 +14,18 @@ function formatApplicationStatus(status) {
 function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  // Kayıt formu
+  const [showRegisterForm, setShowRegisterForm] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [registerMessage, setRegisterMessage] = useState('')
+
+  const [registerForm, setRegisterForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    role: 'STUDENT',
+  })
   const [showPassword, setShowPassword] = useState(false)
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -53,6 +65,18 @@ function App() {
   const [isLoadingCompany, setIsLoadingCompany] = useState(false)
   const [companyError, setCompanyError] = useState('')
   const [showCompanyProfile, setShowCompanyProfile] = useState(false)
+  // Şirket profilini düzenleme
+  const [showCompanyForm, setShowCompanyForm] = useState(false)
+  const [isSavingCompany, setIsSavingCompany] = useState(false)
+  const [companyFormMessage, setCompanyFormMessage] = useState('')
+
+  const [companyForm, setCompanyForm] = useState({
+    companyName: '',
+    sector: '',
+    city: '',
+    website: '',
+    description: '',
+  })
   const [updatingApplicationId, setUpdatingApplicationId] = useState(null)
   const [companyApplicationMessage, setCompanyApplicationMessage] = useState('')
   // Yeni ilan oluşturma formu
@@ -782,6 +806,118 @@ function App() {
       setDeletingJobId(null)
     }
   }
+  // Şirket profil düzenleme formunu mevcut bilgilerle aç
+  function openCompanyForm() {
+    setCompanyForm({
+      companyName: companyProfile?.companyName || '',
+      sector: companyProfile?.sector || '',
+      city: companyProfile?.city || '',
+      website: companyProfile?.website || '',
+      description: companyProfile?.description || '',
+    })
+
+    setCompanyFormMessage('')
+    setShowCompanyForm(true)
+  }
+
+  // Şirket profilini güncelle
+  async function saveCompanyProfile(event) {
+    event.preventDefault()
+    setIsSavingCompany(true)
+    setCompanyFormMessage('')
+
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      if (!token) {
+        setCompanyFormMessage(
+          'Oturum bilgisi bulunamadı. Tekrar giriş yap.',
+        )
+        return
+      }
+
+      const response = await fetch('/api/company', {
+        method: companyProfile ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(companyForm),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setCompanyFormMessage(
+          data.message || 'Şirket profili güncellenemedi.',
+        )
+        return
+      }
+
+      setCompanyProfile(data)
+      setCompanyError('')
+
+      setCompanyFormMessage(
+        companyProfile
+          ? 'Şirket profili başarıyla güncellendi.'
+          : 'Şirket profili başarıyla oluşturuldu.',
+      )
+
+      setShowCompanyForm(false)
+    } catch {
+      setCompanyFormMessage(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+    } finally {
+      setIsSavingCompany(false)
+    }
+  }
+  // Yeni kullanıcı hesabı oluştur
+  async function registerUser(event) {
+    event.preventDefault()
+    setIsRegistering(true)
+    setRegisterMessage('')
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registerForm),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setRegisterMessage(
+          data.message || 'Kayıt oluşturulamadı. Bilgileri kontrol et.',
+        )
+        return
+      }
+
+      setEmail(registerForm.email)
+      setPassword('')
+      setRegisterForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        role: 'STUDENT',
+      })
+
+      setShowRegisterForm(false)
+      setRegisterMessage(
+        'Hesabın başarıyla oluşturuldu. Şimdi giriş yapabilirsin.',
+      )
+    } catch {
+      setRegisterMessage(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+    } finally {
+      setIsRegistering(false)
+    }
+  }
   // Giriş yapan kullanıcının paneli
   if (currentUser) {
     const roleTitle =
@@ -1283,19 +1419,130 @@ function App() {
                 <section className="job-list-section">
                   <div className="job-list-heading">
                     <h2>Şirket Profilim</h2>
-                    <button
-                      type="button"
-                      className="logout-button"
-                      onClick={() => setShowCompanyProfile(false)}
-                    >
-                      Kapat
-                    </button>
+
+                    <div className="cv-form-actions">
+                      <button
+                        type="button"
+                        className="logout-button"
+                        onClick={openCompanyForm}
+                      >
+                        Profili Düzenle
+                      </button>
+
+                      <button
+                        type="button"
+                        className="logout-button"
+                        onClick={() => {
+                          setShowCompanyProfile(false)
+                          setShowCompanyForm(false)
+                          setCompanyFormMessage('')
+                        }}
+                      >
+                        Kapat
+                      </button>
+                    </div>
                   </div>
 
                   {isLoadingCompany && <p>Şirket bilgileri yükleniyor...</p>}
 
                   {companyError && (
                     <p role="alert">{companyError}</p>
+                  )}
+                  {companyFormMessage && (
+                    <p className="status-message" role="status">
+                      {companyFormMessage}
+                    </p>
+                  )}
+
+                  {showCompanyForm && (
+                    <form className="cv-edit-form" onSubmit={saveCompanyProfile}>
+                      <label htmlFor="company-name">Şirket adı</label>
+                      <input
+                        id="company-name"
+                        value={companyForm.companyName}
+                        onChange={(event) =>
+                          setCompanyForm({
+                            ...companyForm,
+                            companyName: event.target.value,
+                          })
+                        }
+                        required
+                      />
+
+                      <label htmlFor="company-sector">Sektör</label>
+                      <input
+                        id="company-sector"
+                        value={companyForm.sector}
+                        onChange={(event) =>
+                          setCompanyForm({
+                            ...companyForm,
+                            sector: event.target.value,
+                          })
+                        }
+                      />
+
+                      <label htmlFor="company-city">Şehir</label>
+                      <input
+                        id="company-city"
+                        value={companyForm.city}
+                        onChange={(event) =>
+                          setCompanyForm({
+                            ...companyForm,
+                            city: event.target.value,
+                          })
+                        }
+                      />
+
+                      <label htmlFor="company-website">Web sitesi</label>
+                      <input
+                        id="company-website"
+                        type="url"
+                        value={companyForm.website}
+                        onChange={(event) =>
+                          setCompanyForm({
+                            ...companyForm,
+                            website: event.target.value,
+                          })
+                        }
+                        placeholder="https://ornek.com"
+                      />
+
+                      <label htmlFor="company-description">Şirket açıklaması</label>
+                      <textarea
+                        id="company-description"
+                        rows={4}
+                        value={companyForm.description}
+                        onChange={(event) =>
+                          setCompanyForm({
+                            ...companyForm,
+                            description: event.target.value,
+                          })
+                        }
+                      />
+
+                      <div className="cv-form-actions">
+                        <button
+                          type="submit"
+                          className="login-button"
+                          disabled={isSavingCompany}
+                        >
+                          {isSavingCompany
+                            ? 'Kaydediliyor...'
+                            : 'Değişiklikleri Kaydet'}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="logout-button"
+                          onClick={() => {
+                            setShowCompanyForm(false)
+                            setCompanyFormMessage('')
+                          }}
+                        >
+                          Vazgeç
+                        </button>
+                      </div>
+                    </form>
                   )}
 
                   {!isLoadingCompany && !companyError && companyProfile && (
@@ -1714,7 +1961,7 @@ function App() {
             Devam etmek için hesap bilgilerini gir.
           </p>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} hidden={showRegisterForm}>
             <label htmlFor="email">E-posta adresi</label>
 
             <input
@@ -1764,6 +2011,112 @@ function App() {
               </p>
             )}
           </form>
+          <button
+            type="button"
+            className="logout-button"
+            onClick={() => {
+              setShowRegisterForm((previous) => !previous)
+              setRegisterMessage('')
+            }}
+          >
+            {showRegisterForm ? 'Giriş Yap' : 'Kayıt Ol'}
+          </button>
+
+          {registerMessage && (
+            <p className="status-message" role="status">
+              {registerMessage}
+            </p>
+          )}
+
+          {showRegisterForm && (
+            <form className="cv-edit-form" onSubmit={registerUser}>
+              <h2>Yeni Hesap Oluştur</h2>
+
+              <label htmlFor="register-first-name">Ad</label>
+              <input
+                id="register-first-name"
+                type="text"
+                value={registerForm.firstName}
+                onChange={(event) =>
+                  setRegisterForm((previous) => ({
+                    ...previous,
+                    firstName: event.target.value,
+                  }))
+                }
+                required
+              />
+
+              <label htmlFor="register-last-name">Soyad</label>
+              <input
+                id="register-last-name"
+                type="text"
+                value={registerForm.lastName}
+                onChange={(event) =>
+                  setRegisterForm((previous) => ({
+                    ...previous,
+                    lastName: event.target.value,
+                  }))
+                }
+                required
+              />
+
+              <label htmlFor="register-email">E-posta</label>
+              <input
+                id="register-email"
+                type="email"
+                value={registerForm.email}
+                onChange={(event) =>
+                  setRegisterForm((previous) => ({
+                    ...previous,
+                    email: event.target.value,
+                  }))
+                }
+                autoComplete="email"
+                required
+              />
+
+              <label htmlFor="register-password">Şifre</label>
+              <input
+                id="register-password"
+                type="password"
+                value={registerForm.password}
+                onChange={(event) =>
+                  setRegisterForm((previous) => ({
+                    ...previous,
+                    password: event.target.value,
+                  }))
+                }
+                autoComplete="new-password"
+                required
+              />
+
+              <label htmlFor="register-role">Hesap türü</label>
+              <select
+                id="register-role"
+                value={registerForm.role}
+                onChange={(event) =>
+                  setRegisterForm((previous) => ({
+                    ...previous,
+                    role: event.target.value,
+                  }))
+                }
+                required
+              >
+                <option value="STUDENT">Öğrenci</option>
+                <option value="COMPANY">Şirket</option>
+              </select>
+
+              <button
+                type="submit"
+                className="login-button"
+                disabled={isRegistering}
+              >
+                {isRegistering
+                  ? 'Hesap oluşturuluyor...'
+                  : 'Hesap Oluştur'}
+              </button>
+            </form>
+          )}
 
           <div className="account-note">
             <span className="note-icon">✦</span>

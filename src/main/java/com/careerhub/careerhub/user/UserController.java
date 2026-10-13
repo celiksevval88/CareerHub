@@ -3,6 +3,8 @@ package com.careerhub.careerhub.user;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/users")
@@ -23,7 +25,18 @@ public class UserController {
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
         user.setPassword(request.getPassword());
-        user.setRole(request.getRole());
+        String role = request.getRole();
+
+        if (role == null ||
+                (!role.equalsIgnoreCase("STUDENT")
+                        && !role.equalsIgnoreCase("COMPANY"))) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Rol STUDENT veya COMPANY olmalıdır.");
+        }
+
+        user.setRole(role.toUpperCase());
 
         User savedUser = userService.createUser(user);
 
@@ -32,37 +45,40 @@ public class UserController {
                 savedUser.getFirstName(),
                 savedUser.getLastName(),
                 savedUser.getEmail(),
-                savedUser.getRole()
-        );
+                savedUser.getRole());
     }
+
     @PostMapping("/login")
-public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
 
-    return userService.login(request);
-}
-@GetMapping("/test")
-public String test() {
-    return "JWT doğrulama başarılı";
-}
-@GetMapping("/me")
-public UserResponse me(Authentication authentication) {
+        return userService.login(request);
+    }
 
-    User user = userService.getUserByEmail(authentication.getName());
+    @GetMapping("/test")
+    public String test() {
+        return "JWT doğrulama başarılı";
+    }
 
-    return new UserResponse(
-            user.getId(),
-            user.getFirstName(),
-            user.getLastName(),
-            user.getEmail(),
-            user.getRole()
-    );
-}
-@GetMapping("/student")
-public String student() {
-    return "Student endpointine erişildi";
-}
-@GetMapping("/admin")
-public String admin() {
-    return "Admin endpointine erişildi";
-}
+    @GetMapping("/me")
+    public UserResponse me(Authentication authentication) {
+
+        User user = userService.getUserByEmail(authentication.getName());
+
+        return new UserResponse(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getRole());
+    }
+
+    @GetMapping("/student")
+    public String student() {
+        return "Student endpointine erişildi";
+    }
+
+    @GetMapping("/admin")
+    public String admin() {
+        return "Admin endpointine erişildi";
+    }
 }
