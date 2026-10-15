@@ -890,9 +890,21 @@ function App() {
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        setRegisterMessage(
-          data.message || 'Kayıt oluşturulamadı. Bilgileri kontrol et.',
-        )
+        const errorMessage = data.message || ''
+
+        if (
+          response.status === 409 ||
+          errorMessage.includes('Bu e-posta adresi zaten kayıtlı')
+        ) {
+          setRegisterMessage(
+            'Bu e-posta adresi zaten kayıtlı. Giriş yapabilir veya farklı bir e-posta kullanabilirsin.',
+          )
+        } else {
+          setRegisterMessage(
+            errorMessage || 'Kayıt oluşturulamadı. Bilgileri kontrol et.',
+          )
+        }
+
         return
       }
 

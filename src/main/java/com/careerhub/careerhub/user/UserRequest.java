@@ -16,17 +16,14 @@ public class UserRequest {
     @NotBlank(message = "Email boş bırakılamaz")
     @Email(message = "Geçerli bir email adresi giriniz")
     private String email;
-
     @NotBlank(message = "Şifre boş bırakılamaz")
-    @Size(min = 6, message = "Şifre en az 6 karakter olmalıdır")
+    @Size(min = 8, message = "Şifre en az 8 karakter olmalıdır")
+    @Pattern(regexp = "^(?=.*\\p{L})(?=.*\\d).+$", message = "Şifre en az bir harf ve bir rakam içermelidir")
     private String password;
 
     @NotBlank(message = "Rol boş bırakılamaz")
-    @Pattern(
-        regexp = "STUDENT|COMPANY",
-        message = "Rol STUDENT veya COMPANY olmalıdır"
-)
-private String role;
+    @Pattern(regexp = "STUDENT|COMPANY", message = "Rol STUDENT veya COMPANY olmalıdır")
+    private String role;
 
     public String getFirstName() {
         return firstName;
