@@ -11,9 +11,14 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserController {
 
     private final UserService userService;
+    private final EmailVerificationService emailVerificationService;
 
-    public UserController(UserService userService) {
+    public UserController(
+            UserService userService,
+            EmailVerificationService emailVerificationService) {
+
         this.userService = userService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @PostMapping
@@ -38,14 +43,23 @@ public class UserController {
 
         user.setRole(role.toUpperCase());
 
-        User savedUser = userService.createUser(user);
+        String verificationToken = emailVerificationService.generateToken();
 
+        User savedUser = userService.createUser(user, verificationToken);
         return new UserResponse(
                 savedUser.getId(),
                 savedUser.getFirstName(),
                 savedUser.getLastName(),
                 savedUser.getEmail(),
                 savedUser.getRole());
+    }
+
+    @GetMapping("/verify-email")
+    public String verifyEmail(@RequestParam("token") String token) {
+
+        userService.verifyEmail(token);
+
+        return "E-posta adresin başarıyla doğrulandı.";
     }
 
     @PostMapping("/login")

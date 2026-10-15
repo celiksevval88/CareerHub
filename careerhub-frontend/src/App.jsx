@@ -920,7 +920,7 @@ function App() {
 
       setShowRegisterForm(false)
       setRegisterMessage(
-        'Hesabın başarıyla oluşturuldu. Şimdi giriş yapabilirsin.',
+        'Hesabın oluşturuldu. Giriş yapmadan önce e-posta adresine gönderdiğimiz doğrulama bağlantısına tıkla.',
       )
     } catch {
       setRegisterMessage(
