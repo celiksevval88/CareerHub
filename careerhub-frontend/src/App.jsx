@@ -157,7 +157,72 @@ function App() {
         setMessage('Kullanıcı bilgileri alınamadı. Tekrar giriş yap.')
         return
       }
+      setStudentCv(null)
+      setCvError('')
+      setCvFormMessage('')
 
+      setCvForm({
+        title: '',
+        about: '',
+        education: '',
+        skills: '',
+        experiences: '',
+        projects: '',
+      })
+
+      setShowCvForm(false)
+      setApplications([])
+      setApplicationsError('')
+      setShowApplications(false)
+      setShowCv(false)
+      setShowJobPostings(false)
+      // Önceki şirket profilini temizle
+      setCompanyProfile(null)
+      setCompanyError('')
+      setShowCompanyProfile(false)
+      setShowCompanyForm(false)
+      setIsSavingCompany(false)
+      setCompanyFormMessage('')
+
+      setCompanyForm({
+        companyName: '',
+        sector: '',
+        city: '',
+        website: '',
+        description: '',
+      })
+
+      // Şirket başvurularını temizle
+      setUpdatingApplicationId(null)
+      setCompanyApplicationMessage('')
+      setCompanyApplications([])
+      setCompanyApplicationsError('')
+      setIsLoadingCompanyApplications(false)
+      setShowCompanyApplications(false)
+
+      // Şirket ilanlarını temizle
+      setCompanyJobPostings([])
+      setCompanyJobsError('')
+      setIsLoadingCompanyJobs(false)
+      setShowCompanyJobs(false)
+
+      // İlan oluşturma ve düzenleme formlarını temizle
+      setShowCreateJobForm(false)
+      setIsCreatingJob(false)
+      setCreateJobMessage('')
+      setEditingJobId(null)
+      setIsUpdatingJob(false)
+      setUpdateJobMessage('')
+      setDeletingJobId(null)
+      setDeleteJobMessage('')
+
+      setCreateJobForm({
+        title: '',
+        type: 'STAJ',
+        city: '',
+        workType: 'HİBRİT',
+        description: '',
+      })
       setCurrentUser(profile)
     } catch {
       setMessage(
@@ -272,6 +337,7 @@ function App() {
   async function loadApplications() {
     setIsLoadingApplications(true)
     setApplicationsError('')
+    setApplications([])
 
     // Diğer öğrenci bölümlerini kapat
     setShowJobPostings(false)
