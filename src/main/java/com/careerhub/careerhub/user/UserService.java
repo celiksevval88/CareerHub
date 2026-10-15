@@ -97,7 +97,7 @@ public class UserService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Email veya şifre hatalı");
         }
-        if (Boolean.FALSE.equals(user.getEmailVerified())) {
+       if (!Boolean.TRUE.equals(user.getEmailVerified())) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Giriş yapmadan önce e-posta adresini doğrulamalısın.");
