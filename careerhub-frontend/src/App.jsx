@@ -1654,7 +1654,7 @@ function App() {
                   )}
 
                   {!isLoadingCv && !showCvForm && studentCv && (
-                    <article className="job-list-card">
+                    <article className="job-list-card student-cv-preview">
                       <h3>{studentCv.title || 'CV başlığı belirtilmemiş'}</h3>
 
                       <p>

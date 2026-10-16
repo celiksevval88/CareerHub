@@ -803,3 +803,53 @@
   background-color: #f3f4f6;
   border-color: #d1d5db;
 }
+/* Öğrenci CV önizlemesi */
+.student-cv-preview {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 32px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  line-height: 1.7;
+}
+
+/* CV başlığı */
+.student-cv-preview > h3:first-child {
+  margin-top: 0;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #dbeafe;
+  color: #1d4ed8;
+  font-size: 1.6rem;
+}
+
+/* CV bölümleri */
+.student-cv-preview > h3:not(:first-child) {
+  margin-top: 24px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #334155;
+  font-size: 1.05rem;
+}
+
+/* CV içindeki bilgiler */
+.student-cv-preview > p {
+  margin: 8px 0;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+/* Küçük ekranlarda boşlukları azalt */
+@media (max-width: 600px) {
+  .student-cv-preview {
+    padding: 20px;
+    margin: 16px 0;
+  }
+
+  .student-cv-preview > h3:first-child {
+    font-size: 1.35rem;
+  }
+}
