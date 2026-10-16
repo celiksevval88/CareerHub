@@ -125,6 +125,7 @@ function App() {
   // Yönetici: kullanıcı yönetimi
   const [showAdminCompanies, setShowAdminCompanies] = useState(false)
   const [showAdminUsers, setShowAdminUsers] = useState(false)
+  const [expandedAdminUserId, setExpandedAdminUserId] = useState(null)
   const [adminUsers, setAdminUsers] = useState([])
   const [isLoadingAdminUsers, setIsLoadingAdminUsers] = useState(false)
   const [adminUsersError, setAdminUsersError] = useState('')
@@ -2361,13 +2362,45 @@ function App() {
                               <p>
                                 <strong>Rol:</strong> {user.role}
                               </p>
+                              <button
+                                type="button"
+                                className="logout-button"
+                                onClick={() =>
+                                  setExpandedAdminUserId((currentId) =>
+                                    currentId === user.id ? null : user.id,
+                                  )
+                                }
+                              >
+                                {expandedAdminUserId === user.id
+                                  ? 'Detayları Gizle'
+                                  : 'Detayları Gör'}
+                              </button>
+
+                              {expandedAdminUserId === user.id && (
+                                <div className="admin-company-details">
+                                  <p>
+                                    <strong>Kullanıcı numarası:</strong> {user.id}
+                                  </p>
+
+                                  <p>
+                                    <strong>Hesap türü:</strong>{' '}
+                                    {user.role === 'STUDENT'
+                                      ? 'Öğrenci'
+                                      : user.role === 'COMPANY'
+                                        ? 'Şirket'
+                                        : user.role === 'ADMIN'
+                                          ? 'Yönetici'
+                                          : user.role}
+                                  </p>
+                                </div>
+                              )}
                             </article>
                           ))}
                         </div>
                       )}
                   </>
                 )}
-                               
+
               </section>
             </div>
           ) : (
