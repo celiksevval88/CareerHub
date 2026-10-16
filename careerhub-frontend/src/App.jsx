@@ -10,6 +10,16 @@ function formatApplicationStatus(status) {
 
   return statuses[status] || status
 }
+function getApplicationStatusClass(status) {
+  const statusClasses = {
+    BEKLEMEDE: 'status-pending',
+    DEĞERLENDİRİLİYOR: 'status-review',
+    KABUL_EDİLDİ: 'status-accepted',
+    REDDEDİLDİ: 'status-rejected',
+  }
+
+  return statusClasses[status] || 'status-unknown'
+}
 
 function App() {
   const [email, setEmail] = useState('')
@@ -1492,7 +1502,9 @@ function App() {
                                 <p>{application.companyName}</p>
                               </div>
 
-                              <span className="job-type">
+                              <span
+                                className={`application-status ${getApplicationStatusClass(application.status)}`}
+                              >
                                 {formatApplicationStatus(application.status)}
                               </span>
                             </div>
