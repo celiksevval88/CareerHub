@@ -107,6 +107,12 @@ function App() {
   const [isLoadingCompanyApplications, setIsLoadingCompanyApplications] = useState(false)
   const [companyApplicationsError, setCompanyApplicationsError] = useState('')
   const [showCompanyApplications, setShowCompanyApplications] = useState(false)
+  // Yönetici: şirket onayları
+  const [adminCompanies, setAdminCompanies] = useState([])
+  const [isLoadingAdminCompanies, setIsLoadingAdminCompanies] = useState(false)
+  const [adminCompaniesError, setAdminCompaniesError] = useState('')
+  const [adminCompanyMessage, setAdminCompanyMessage] = useState('')
+  const [updatingAdminCompanyId, setUpdatingAdminCompanyId] = useState(null)
 
   // Kullanıcı girişi
   async function handleSubmit(event) {
@@ -936,6 +942,96 @@ function App() {
       )
     } finally {
       setIsSavingCompany(false)
+    }
+  }
+  // Yönetici: şirketleri listele
+  async function loadAdminCompanies() {
+    setIsLoadingAdminCompanies(true)
+    setAdminCompaniesError('')
+    setAdminCompanyMessage('')
+
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      const response = await fetch('/api/admin/companies', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json().catch(() => [])
+
+      if (!response.ok) {
+        setAdminCompaniesError(
+          data.message || 'Şirketler yüklenemedi.',
+        )
+        setAdminCompanies([])
+        return
+      }
+
+      if (!Array.isArray(data)) {
+        setAdminCompaniesError(
+          'Sunucudan geçerli bir şirket listesi alınamadı.',
+        )
+        setAdminCompanies([])
+        return
+      }
+
+      setAdminCompanies(data)
+    } catch {
+      setAdminCompaniesError(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+      setAdminCompanies([])
+    } finally {
+      setIsLoadingAdminCompanies(false)
+    }
+  }
+  // Yönetici: şirket onay durumunu güncelle
+  async function updateAdminCompanyApproval(companyId, status) {
+    setUpdatingAdminCompanyId(companyId)
+    setAdminCompaniesError('')
+    setAdminCompanyMessage('')
+
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      const response = await fetch(
+        `/api/admin/companies/${companyId}/approval?status=${status}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setAdminCompaniesError(
+          data.message || 'Şirket onay durumu güncellenemedi.',
+        )
+        return
+      }
+
+      setAdminCompanies((previous) =>
+        previous.map((company) =>
+          company.id === companyId ? data : company,
+        ),
+      )
+
+      setAdminCompanyMessage(
+        status === 'APPROVED'
+          ? 'Şirket başarıyla onaylandı.'
+          : 'Şirket reddedildi.',
+      )
+    } catch {
+      setAdminCompaniesError(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+    } finally {
+      setUpdatingAdminCompanyId(null)
     }
   }
   // Yeni kullanıcı hesabı oluştur
@@ -1962,6 +2058,122 @@ function App() {
                 </p>
               )}
             </>
+          ) : currentUser.role === 'ADMIN' ? (
+            <section className="job-list-section">
+              <div className="job-list-heading">
+                <h2>Şirket Yönetimi</h2>
+
+                <button
+                  type="button"
+                  className="login-button"
+                  onClick={loadAdminCompanies}
+                  disabled={isLoadingAdminCompanies}
+                >
+                  {isLoadingAdminCompanies
+                    ? 'Şirketler yükleniyor...'
+                    : 'Şirketleri Listele'}
+                </button>
+              </div>
+
+              <p>
+                Kayıtlı şirketleri inceleyebilir ve onay durumlarını
+                yönetebilirsin.
+              </p>
+
+              {adminCompanyMessage && (
+                <p className="status-message" role="status">
+                  {adminCompanyMessage}
+                </p>
+              )}
+
+              {adminCompaniesError && (
+                <p role="alert">{adminCompaniesError}</p>
+              )}
+
+              {isLoadingAdminCompanies && (
+                <p>Şirket kayıtları getiriliyor...</p>
+              )}
+
+              {!isLoadingAdminCompanies &&
+                !adminCompaniesError &&
+                adminCompanies.length === 0 && (
+                  <p>Henüz listelenecek şirket bulunmuyor.</p>
+                )}
+
+              {!isLoadingAdminCompanies &&
+                adminCompanies.length > 0 && (
+                  <div className="job-list-grid">
+                    {adminCompanies.map((company) => (
+                      <article
+                        className="job-list-card"
+                        key={company.id}
+                      >
+                        <h3>{company.companyName}</h3>
+
+                        <p>
+                         <strong>E-posta:</strong> {company.userEmail}
+                        </p>
+
+                        <p>
+                          <strong>Sektör:</strong>{' '}
+                          {company.sector || 'Belirtilmedi'}
+                        </p>
+
+                        <p>
+                          <strong>Şehir:</strong>{' '}
+                          {company.city || 'Belirtilmedi'}
+                        </p>
+
+                        <p>
+                          <strong>Onay durumu:</strong>{' '}
+                          {company.approvalStatus === 'APPROVED'
+                            ? 'Onaylandı'
+                            : company.approvalStatus === 'REJECTED'
+                              ? 'Reddedildi'
+                              : 'Beklemede'}
+                        </p>
+
+                        {(company.approvalStatus === 'PENDING' ||
+                          !company.approvalStatus) && (
+                            <div className="cv-form-actions">
+                              <button
+                                type="button"
+                                className="login-button"
+                                disabled={
+                                  updatingAdminCompanyId === company.id
+                                }
+                                onClick={() =>
+                                  updateAdminCompanyApproval(
+                                    company.id,
+                                    'APPROVED',
+                                  )
+                                }
+                              >
+                                Onayla
+                              </button>
+
+                              <button
+                                type="button"
+                                className="logout-button"
+                                disabled={
+                                  updatingAdminCompanyId === company.id
+                                }
+                                onClick={() =>
+                                  updateAdminCompanyApproval(
+                                    company.id,
+                                    'REJECTED',
+                                  )
+                                }
+                              >
+                                Reddet
+                              </button>
+                            </div>
+                          )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+            </section>
           ) : (
             <div className="dashboard-placeholder">
               <h2>{roleTitle} hazırlanıyor</h2>
