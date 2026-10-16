@@ -34,22 +34,28 @@ function App() {
 
   const [jobPostings, setJobPostings] = useState([])
   const [jobSearch, setJobSearch] = useState('')
+  const [jobTypeFilter, setJobTypeFilter] = useState('ALL')
   const filteredJobPostings = jobPostings.filter((job) => {
     const searchTerm = jobSearch.trim().toLocaleLowerCase('tr-TR')
-
-    if (!searchTerm) {
-      return true
-    }
 
     const title = (job.title ?? '').toLocaleLowerCase('tr-TR')
     const companyName = (job.companyName ?? '').toLocaleLowerCase('tr-TR')
     const city = (job.city ?? '').toLocaleLowerCase('tr-TR')
 
-    return (
+    const matchesSearch =
+      !searchTerm ||
       title.includes(searchTerm) ||
       companyName.includes(searchTerm) ||
       city.includes(searchTerm)
-    )
+
+    const type = (job.type ?? '').toLocaleUpperCase('tr-TR')
+
+    const matchesType =
+      jobTypeFilter === 'ALL' ||
+      (jobTypeFilter === 'STAJ' && type === 'STAJ') ||
+      (jobTypeFilter === 'OTHER' && type !== 'STAJ')
+
+    return matchesSearch && matchesType
   })
   const [isLoadingJobs, setIsLoadingJobs] = useState(false)
   const [jobsError, setJobsError] = useState('')
@@ -1324,6 +1330,21 @@ function App() {
                       onChange={(event) => setJobSearch(event.target.value)}
                       placeholder="Pozisyon, şirket veya şehir yaz..."
                     />
+                  </div>
+                  <div className="job-type-filter">
+                    <label htmlFor="job-type-filter">
+                      İlan türü
+                    </label>
+
+                    <select
+                      id="job-type-filter"
+                      value={jobTypeFilter}
+                      onChange={(event) => setJobTypeFilter(event.target.value)}
+                    >
+                      <option value="ALL">Tüm ilanlar</option>
+                      <option value="STAJ">Staj ilanları</option>
+                      <option value="OTHER">Diğer iş ilanları</option>
+                    </select>
                   </div>
                   {isLoadingJobs && (
                     <p>İlanlar yükleniyor...</p>
