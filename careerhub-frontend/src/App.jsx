@@ -127,6 +127,21 @@ function App() {
   const [showAdminUsers, setShowAdminUsers] = useState(false)
   const [expandedAdminUserId, setExpandedAdminUserId] = useState(null)
   const [adminUsers, setAdminUsers] = useState([])
+  const [adminUserSearch, setAdminUserSearch] = useState('')
+  const filteredAdminUsers = adminUsers.filter((user) => {
+    const searchTerm = adminUserSearch.trim().toLocaleLowerCase('tr-TR')
+
+    if (!searchTerm) {
+      return true
+    }
+
+    const fullName =
+      `${user.firstName ?? ''} ${user.lastName ?? ''}`.toLocaleLowerCase('tr-TR')
+
+    const email = (user.email ?? '').toLocaleLowerCase('tr-TR')
+
+    return fullName.includes(searchTerm) || email.includes(searchTerm)
+  })
   const [isLoadingAdminUsers, setIsLoadingAdminUsers] = useState(false)
   const [adminUsersError, setAdminUsersError] = useState('')
 
@@ -2328,6 +2343,19 @@ function App() {
                 </div>
                 {showAdminUsers && (
                   <>
+                    <div className="admin-user-search">
+                      <label htmlFor="admin-user-search">
+                        Kullanıcı ara
+                      </label>
+
+                      <input
+                        id="admin-user-search"
+                        type="search"
+                        value={adminUserSearch}
+                        onChange={(event) => setAdminUserSearch(event.target.value)}
+                        placeholder="Ad, soyad veya e-posta yaz..."
+                      />
+                    </div>
                     {adminUsersError && (
                       <p role="alert">{adminUsersError}</p>
                     )}
@@ -2341,12 +2369,18 @@ function App() {
                       adminUsers.length === 0 && (
                         <p>Henüz kullanıcı listelenmedi.</p>
                       )}
+                    {!isLoadingAdminUsers &&
+                      !adminUsersError &&
+                      adminUsers.length > 0 &&
+                      filteredAdminUsers.length === 0 && (
+                        <p>Aramayla eşleşen kullanıcı bulunamadı.</p>
+                      )}
 
                     {!isLoadingAdminUsers &&
                       !adminUsersError &&
-                      adminUsers.length > 0 && (
+                      filteredAdminUsers.length > 0 && (
                         <div className="job-list-grid">
-                          {adminUsers.map((user) => (
+                          {filteredAdminUsers.map((user) => (
                             <article
                               className="job-list-card"
                               key={user.id}
