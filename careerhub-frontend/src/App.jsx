@@ -114,6 +114,7 @@ function App() {
   const [adminCompanyMessage, setAdminCompanyMessage] = useState('')
   const [updatingAdminCompanyId, setUpdatingAdminCompanyId] = useState(null)
   const [adminCompanyFilter, setAdminCompanyFilter] = useState('ALL')
+  const [expandedAdminCompanyId, setExpandedAdminCompanyId] = useState(null)
   const filteredAdminCompanies = adminCompanies.filter((company) => {
     if (adminCompanyFilter === 'ALL') {
       return true
@@ -2154,6 +2155,43 @@ function App() {
 
                         <p>
                           <strong>Onay durumu:</strong>{' '}
+                          <button
+                            type="button"
+                            className="logout-button"
+                            onClick={() =>
+                              setExpandedAdminCompanyId((currentId) =>
+                                currentId === company.id ? null : company.id,
+                              )
+                            }
+                          >
+                            {expandedAdminCompanyId === company.id
+                              ? 'Detayları Gizle'
+                              : 'Detayları Gör'}
+                          </button>
+
+                          {expandedAdminCompanyId === company.id && (
+                            <div className="admin-company-details">
+                              <p>
+                                <strong>Web sitesi:</strong>{' '}
+                                {company.website ? (
+                                  <a
+                                    href={company.website}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    {company.website}
+                                  </a>
+                                ) : (
+                                  'Belirtilmedi'
+                                )}
+                              </p>
+
+                              <p>
+                                <strong>Açıklama:</strong>{' '}
+                                {company.description || 'Açıklama eklenmemiş.'}
+                              </p>
+                            </div>
+                          )}
                           {company.approvalStatus === 'APPROVED'
                             ? 'Onaylandı'
                             : company.approvalStatus === 'REJECTED'
