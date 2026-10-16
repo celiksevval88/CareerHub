@@ -122,6 +122,12 @@ function App() {
 
     return company.approvalStatus === adminCompanyFilter
   })
+  // Yönetici: kullanıcı yönetimi
+  const [showAdminCompanies, setShowAdminCompanies] = useState(false)
+  const [showAdminUsers, setShowAdminUsers] = useState(false)
+  const [adminUsers, setAdminUsers] = useState([])
+  const [isLoadingAdminUsers, setIsLoadingAdminUsers] = useState(false)
+  const [adminUsersError, setAdminUsersError] = useState('')
 
   // Kullanıcı girişi
   async function handleSubmit(event) {
@@ -951,6 +957,48 @@ function App() {
       )
     } finally {
       setIsSavingCompany(false)
+    }
+  }
+  // Yönetici: kullanıcıları listele
+  async function loadAdminUsers() {
+    setIsLoadingAdminUsers(true)
+    setAdminUsersError('')
+
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json().catch(() => [])
+
+      if (!response.ok) {
+        setAdminUsersError(
+          data.message || 'Kullanıcılar yüklenemedi.',
+        )
+        setAdminUsers([])
+        return
+      }
+
+      if (!Array.isArray(data)) {
+        setAdminUsersError(
+          'Sunucudan geçerli bir kullanıcı listesi alınamadı.',
+        )
+        setAdminUsers([])
+        return
+      }
+
+      setAdminUsers(data)
+    } catch {
+      setAdminUsersError(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+      setAdminUsers([])
+    } finally {
+      setIsLoadingAdminUsers(false)
     }
   }
   // Yönetici: şirketleri listele
@@ -2068,178 +2116,260 @@ function App() {
               )}
             </>
           ) : currentUser.role === 'ADMIN' ? (
-            <section className="job-list-section">
-              <div className="job-list-heading">
-                <h2>Şirket Yönetimi</h2>
+            <div className="admin-management-grid">
+              <section className="job-list-section admin-management-card">
+                <div className="job-list-heading">
+                  <h2>Şirket Yönetimi</h2>
 
-                <button
-                  type="button"
-                  className="login-button"
-                  onClick={loadAdminCompanies}
-                  disabled={isLoadingAdminCompanies}
-                >
-                  {isLoadingAdminCompanies
-                    ? 'Şirketler yükleniyor...'
-                    : 'Şirketleri Listele'}
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    className="login-button"
+                    onClick={() => {
+                      if (showAdminCompanies) {
+                        setShowAdminCompanies(false)
+                      } else {
+                        setShowAdminCompanies(true)
+                        loadAdminCompanies()
+                      }
+                    }}
+                    disabled={isLoadingAdminCompanies}
+                  >
+                    {isLoadingAdminCompanies
+                      ? 'Şirketler yükleniyor...'
+                      : showAdminCompanies
+                        ? 'Şirketleri Gizle'
+                        : 'Şirketleri Listele'}
+                  </button>
+                </div>
+                {showAdminCompanies && (
+                  <>
+                    <p>
+                      Kayıtlı şirketleri inceleyebilir ve onay durumlarını
+                      yönetebilirsin.
+                    </p>
+                    <div className="admin-company-filter">
+                      <label htmlFor="admin-company-filter">
+                        Şirketleri duruma göre filtrele
+                      </label>
 
-              <p>
-                Kayıtlı şirketleri inceleyebilir ve onay durumlarını
-                yönetebilirsin.
-              </p>
-              <div className="admin-company-filter">
-                <label htmlFor="admin-company-filter">
-                  Şirketleri duruma göre filtrele
-                </label>
-
-                <select
-                  id="admin-company-filter"
-                  value={adminCompanyFilter}
-                  onChange={(event) => setAdminCompanyFilter(event.target.value)}
-                >
-                  <option value="ALL">Tüm şirketler</option>
-                  <option value="PENDING">Onay bekleyenler</option>
-                  <option value="APPROVED">Onaylananlar</option>
-                  <option value="REJECTED">Reddedilenler</option>
-                </select>
-              </div>
-
-              {adminCompanyMessage && (
-                <p className="status-message" role="status">
-                  {adminCompanyMessage}
-                </p>
-              )}
-
-              {adminCompaniesError && (
-                <p role="alert">{adminCompaniesError}</p>
-              )}
-
-              {isLoadingAdminCompanies && (
-                <p>Şirket kayıtları getiriliyor...</p>
-              )}
-
-              {!isLoadingAdminCompanies &&
-                !adminCompaniesError &&
-                filteredAdminCompanies.length === 0 && (
-                  <p>
-                    {adminCompanies.length === 0
-                      ? 'Henüz listelenecek şirket bulunmuyor.'
-                      : 'Seçilen filtreye uygun şirket bulunmuyor.'}
-                  </p>
-                )}
-
-              {!isLoadingAdminCompanies &&
-                adminCompanies.length > 0 && (
-                  <div className="job-list-grid">
-                    {filteredAdminCompanies.map((company) => (
-                      <article
-                        className="job-list-card"
-                        key={company.id}
+                      <select
+                        id="admin-company-filter"
+                        value={adminCompanyFilter}
+                        onChange={(event) => setAdminCompanyFilter(event.target.value)}
                       >
-                        <h3>{company.companyName}</h3>
+                        <option value="ALL">Tüm şirketler</option>
+                        <option value="PENDING">Onay bekleyenler</option>
+                        <option value="APPROVED">Onaylananlar</option>
+                        <option value="REJECTED">Reddedilenler</option>
+                      </select>
+                    </div>
 
+                    {adminCompanyMessage && (
+                      <p className="status-message" role="status">
+                        {adminCompanyMessage}
+                      </p>
+                    )}
+
+                    {adminCompaniesError && (
+                      <p role="alert">{adminCompaniesError}</p>
+                    )}
+
+                    {isLoadingAdminCompanies && (
+                      <p>Şirket kayıtları getiriliyor...</p>
+                    )}
+
+                    {!isLoadingAdminCompanies &&
+                      !adminCompaniesError &&
+                      filteredAdminCompanies.length === 0 && (
                         <p>
-                          <strong>E-posta:</strong> {company.userEmail}
+                          {adminCompanies.length === 0
+                            ? 'Henüz listelenecek şirket bulunmuyor.'
+                            : 'Seçilen filtreye uygun şirket bulunmuyor.'}
                         </p>
+                      )}
 
-                        <p>
-                          <strong>Sektör:</strong>{' '}
-                          {company.sector || 'Belirtilmedi'}
-                        </p>
+                    {!isLoadingAdminCompanies &&
+                      adminCompanies.length > 0 && (
+                        <div className="job-list-grid">
+                          {filteredAdminCompanies.map((company) => (
+                            <article
+                              className="job-list-card"
+                              key={company.id}
+                            >
+                              <h3>{company.companyName}</h3>
 
-                        <p>
-                          <strong>Şehir:</strong>{' '}
-                          {company.city || 'Belirtilmedi'}
-                        </p>
-
-                        <p>
-                          <strong>Onay durumu:</strong>{' '}
-                          <button
-                            type="button"
-                            className="logout-button"
-                            onClick={() =>
-                              setExpandedAdminCompanyId((currentId) =>
-                                currentId === company.id ? null : company.id,
-                              )
-                            }
-                          >
-                            {expandedAdminCompanyId === company.id
-                              ? 'Detayları Gizle'
-                              : 'Detayları Gör'}
-                          </button>
-
-                          {expandedAdminCompanyId === company.id && (
-                            <div className="admin-company-details">
                               <p>
-                                <strong>Web sitesi:</strong>{' '}
-                                {company.website ? (
-                                  <a
-                                    href={company.website}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                  >
-                                    {company.website}
-                                  </a>
-                                ) : (
-                                  'Belirtilmedi'
+                                <strong>E-posta:</strong> {company.userEmail}
+                              </p>
+
+                              <p>
+                                <strong>Sektör:</strong>{' '}
+                                {company.sector || 'Belirtilmedi'}
+                              </p>
+
+                              <p>
+                                <strong>Şehir:</strong>{' '}
+                                {company.city || 'Belirtilmedi'}
+                              </p>
+
+                              <p>
+                                <strong>Onay durumu:</strong>{' '}
+                                <button
+                                  type="button"
+                                  className="logout-button"
+                                  onClick={() =>
+                                    setExpandedAdminCompanyId((currentId) =>
+                                      currentId === company.id ? null : company.id,
+                                    )
+                                  }
+                                >
+                                  {expandedAdminCompanyId === company.id
+                                    ? 'Detayları Gizle'
+                                    : 'Detayları Gör'}
+                                </button>
+
+                                {expandedAdminCompanyId === company.id && (
+                                  <div className="admin-company-details">
+                                    <p>
+                                      <strong>Web sitesi:</strong>{' '}
+                                      {company.website ? (
+                                        <a
+                                          href={company.website}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                        >
+                                          {company.website}
+                                        </a>
+                                      ) : (
+                                        'Belirtilmedi'
+                                      )}
+                                    </p>
+
+                                    <p>
+                                      <strong>Açıklama:</strong>{' '}
+                                      {company.description || 'Açıklama eklenmemiş.'}
+                                    </p>
+                                  </div>
                                 )}
+                                {company.approvalStatus === 'APPROVED'
+                                  ? 'Onaylandı'
+                                  : company.approvalStatus === 'REJECTED'
+                                    ? 'Reddedildi'
+                                    : 'Beklemede'}
+                              </p>
+
+                              {(company.approvalStatus === 'PENDING' ||
+                                !company.approvalStatus) && (
+                                  <div className="cv-form-actions">
+                                    <button
+                                      type="button"
+                                      className="login-button"
+                                      disabled={
+                                        updatingAdminCompanyId === company.id
+                                      }
+                                      onClick={() =>
+                                        updateAdminCompanyApproval(
+                                          company.id,
+                                          'APPROVED',
+                                        )
+                                      }
+                                    >
+                                      Onayla
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      className="logout-button"
+                                      disabled={
+                                        updatingAdminCompanyId === company.id
+                                      }
+                                      onClick={() =>
+                                        updateAdminCompanyApproval(
+                                          company.id,
+                                          'REJECTED',
+                                        )
+                                      }
+                                    >
+                                      Reddet
+                                    </button>
+                                  </div>
+                                )}
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                  </>
+                )}
+              </section>
+              <section className="job-list-section admin-management-card">
+                <div className="job-list-heading">
+                  <h2>Kullanıcı Yönetimi</h2>
+
+                  <button
+                    type="button"
+                    className="login-button"
+                    onClick={() => {
+                      if (showAdminUsers) {
+                        setShowAdminUsers(false)
+                      } else {
+                        setShowAdminUsers(true)
+                        loadAdminUsers()
+                      }
+                    }}
+                    disabled={isLoadingAdminUsers}
+                  >
+                    {isLoadingAdminUsers
+                      ? 'Kullanıcılar yükleniyor...'
+                      : showAdminUsers
+                        ? 'Kullanıcıları Gizle'
+                        : 'Kullanıcıları Listele'}
+                  </button>
+                </div>
+                {showAdminUsers && (
+                  <>
+                    {adminUsersError && (
+                      <p role="alert">{adminUsersError}</p>
+                    )}
+
+                    {isLoadingAdminUsers && (
+                      <p>Kullanıcı kayıtları getiriliyor...</p>
+                    )}
+
+                    {!isLoadingAdminUsers &&
+                      !adminUsersError &&
+                      adminUsers.length === 0 && (
+                        <p>Henüz kullanıcı listelenmedi.</p>
+                      )}
+
+                    {!isLoadingAdminUsers &&
+                      !adminUsersError &&
+                      adminUsers.length > 0 && (
+                        <div className="job-list-grid">
+                          {adminUsers.map((user) => (
+                            <article
+                              className="job-list-card"
+                              key={user.id}
+                            >
+                              <h3>
+                                {user.firstName} {user.lastName}
+                              </h3>
+
+                              <p>
+                                <strong>E-posta:</strong> {user.email}
                               </p>
 
                               <p>
-                                <strong>Açıklama:</strong>{' '}
-                                {company.description || 'Açıklama eklenmemiş.'}
+                                <strong>Rol:</strong> {user.role}
                               </p>
-                            </div>
-                          )}
-                          {company.approvalStatus === 'APPROVED'
-                            ? 'Onaylandı'
-                            : company.approvalStatus === 'REJECTED'
-                              ? 'Reddedildi'
-                              : 'Beklemede'}
-                        </p>
-
-                        {(company.approvalStatus === 'PENDING' ||
-                          !company.approvalStatus) && (
-                            <div className="cv-form-actions">
-                              <button
-                                type="button"
-                                className="login-button"
-                                disabled={
-                                  updatingAdminCompanyId === company.id
-                                }
-                                onClick={() =>
-                                  updateAdminCompanyApproval(
-                                    company.id,
-                                    'APPROVED',
-                                  )
-                                }
-                              >
-                                Onayla
-                              </button>
-
-                              <button
-                                type="button"
-                                className="logout-button"
-                                disabled={
-                                  updatingAdminCompanyId === company.id
-                                }
-                                onClick={() =>
-                                  updateAdminCompanyApproval(
-                                    company.id,
-                                    'REJECTED',
-                                  )
-                                }
-                              >
-                                Reddet
-                              </button>
-                            </div>
-                          )}
-                      </article>
-                    ))}
-                  </div>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                  </>
                 )}
-            </section>
+                               
+              </section>
+            </div>
           ) : (
             <div className="dashboard-placeholder">
               <h2>{roleTitle} hazırlanıyor</h2>
