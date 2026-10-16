@@ -333,6 +333,30 @@ function App() {
       }
 
       setJobPostings(data)
+      // Öğrencinin daha önce yaptığı başvuruları getir
+      try {
+        const applicationsResponse = await fetch(
+          '/api/job-applications/student',
+          {
+            headers: token
+              ? { Authorization: `Bearer ${token}` }
+              : {},
+          },
+        )
+
+        const applicationsData = await applicationsResponse
+          .json()
+          .catch(() => [])
+
+        if (
+          applicationsResponse.ok &&
+          Array.isArray(applicationsData)
+        ) {
+          setApplications(applicationsData)
+        }
+      } catch {
+        setApplications([])
+      }
     } catch {
       setJobsError(
         'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
@@ -1396,9 +1420,22 @@ function App() {
                               type="button"
                               className="login-button apply-button"
                               onClick={() => applyToJob(job)}
-                              disabled={applyingJobId === job.id}
+                              disabled={
+                                applyingJobId === job.id ||
+                                applications.some(
+                                  (application) =>
+                                    Number(application.jobPostingId) === Number(job.id),
+                                )
+                              }
                             >
-                              {applyingJobId === job.id ? 'Başvuruluyor...' : 'Başvur'}
+                              {applyingJobId === job.id
+                                ? 'Başvuruluyor...'
+                                : applications.some(
+                                  (application) =>
+                                    Number(application.jobPostingId) === Number(job.id),
+                                )
+                                  ? 'Başvuru yapıldı'
+                                  : 'Başvur'}
                             </button>
                           </article>
                         ))}
