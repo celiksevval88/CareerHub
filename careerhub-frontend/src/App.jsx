@@ -33,6 +33,24 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null)
 
   const [jobPostings, setJobPostings] = useState([])
+  const [jobSearch, setJobSearch] = useState('')
+  const filteredJobPostings = jobPostings.filter((job) => {
+    const searchTerm = jobSearch.trim().toLocaleLowerCase('tr-TR')
+
+    if (!searchTerm) {
+      return true
+    }
+
+    const title = (job.title ?? '').toLocaleLowerCase('tr-TR')
+    const companyName = (job.companyName ?? '').toLocaleLowerCase('tr-TR')
+    const city = (job.city ?? '').toLocaleLowerCase('tr-TR')
+
+    return (
+      title.includes(searchTerm) ||
+      companyName.includes(searchTerm) ||
+      city.includes(searchTerm)
+    )
+  })
   const [isLoadingJobs, setIsLoadingJobs] = useState(false)
   const [jobsError, setJobsError] = useState('')
   const [showJobPostings, setShowJobPostings] = useState(false)
@@ -1294,7 +1312,19 @@ function App() {
                       Kapat
                     </button>
                   </div>
+                  <div className="job-search">
+                    <label htmlFor="job-search-input">
+                      İlan ara
+                    </label>
 
+                    <input
+                      id="job-search-input"
+                      type="search"
+                      value={jobSearch}
+                      onChange={(event) => setJobSearch(event.target.value)}
+                      placeholder="Pozisyon, şirket veya şehir yaz..."
+                    />
+                  </div>
                   {isLoadingJobs && (
                     <p>İlanlar yükleniyor...</p>
                   )}
@@ -1308,12 +1338,18 @@ function App() {
                     jobPostings.length === 0 && (
                       <p>Henüz yayınlanmış ilan bulunmuyor.</p>
                     )}
+                  {!isLoadingJobs &&
+                    !jobsError &&
+                    jobPostings.length > 0 &&
+                    filteredJobPostings.length === 0 && (
+                      <p>Aramayla eşleşen ilan bulunamadı.</p>
+                    )}
 
                   {!isLoadingJobs &&
                     !jobsError &&
-                    jobPostings.length > 0 && (
+                    filteredJobPostings.length > 0 && (
                       <div className="job-list-grid">
-                        {jobPostings.map((job) => (
+                        {filteredJobPostings.map((job) => (
                           <article
                             className="job-list-card"
                             key={job.id}
