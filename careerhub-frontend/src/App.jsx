@@ -113,6 +113,14 @@ function App() {
   const [adminCompaniesError, setAdminCompaniesError] = useState('')
   const [adminCompanyMessage, setAdminCompanyMessage] = useState('')
   const [updatingAdminCompanyId, setUpdatingAdminCompanyId] = useState(null)
+  const [adminCompanyFilter, setAdminCompanyFilter] = useState('ALL')
+  const filteredAdminCompanies = adminCompanies.filter((company) => {
+    if (adminCompanyFilter === 'ALL') {
+      return true
+    }
+
+    return company.approvalStatus === adminCompanyFilter
+  })
 
   // Kullanıcı girişi
   async function handleSubmit(event) {
@@ -2079,6 +2087,22 @@ function App() {
                 Kayıtlı şirketleri inceleyebilir ve onay durumlarını
                 yönetebilirsin.
               </p>
+              <div className="admin-company-filter">
+                <label htmlFor="admin-company-filter">
+                  Şirketleri duruma göre filtrele
+                </label>
+
+                <select
+                  id="admin-company-filter"
+                  value={adminCompanyFilter}
+                  onChange={(event) => setAdminCompanyFilter(event.target.value)}
+                >
+                  <option value="ALL">Tüm şirketler</option>
+                  <option value="PENDING">Onay bekleyenler</option>
+                  <option value="APPROVED">Onaylananlar</option>
+                  <option value="REJECTED">Reddedilenler</option>
+                </select>
+              </div>
 
               {adminCompanyMessage && (
                 <p className="status-message" role="status">
@@ -2096,14 +2120,18 @@ function App() {
 
               {!isLoadingAdminCompanies &&
                 !adminCompaniesError &&
-                adminCompanies.length === 0 && (
-                  <p>Henüz listelenecek şirket bulunmuyor.</p>
+                filteredAdminCompanies.length === 0 && (
+                  <p>
+                    {adminCompanies.length === 0
+                      ? 'Henüz listelenecek şirket bulunmuyor.'
+                      : 'Seçilen filtreye uygun şirket bulunmuyor.'}
+                  </p>
                 )}
 
               {!isLoadingAdminCompanies &&
                 adminCompanies.length > 0 && (
                   <div className="job-list-grid">
-                    {adminCompanies.map((company) => (
+                    {filteredAdminCompanies.map((company) => (
                       <article
                         className="job-list-card"
                         key={company.id}
@@ -2111,7 +2139,7 @@ function App() {
                         <h3>{company.companyName}</h3>
 
                         <p>
-                         <strong>E-posta:</strong> {company.userEmail}
+                          <strong>E-posta:</strong> {company.userEmail}
                         </p>
 
                         <p>
