@@ -21,8 +21,12 @@ public class User {
     private String password;
 
     private String role;
+
+    @Column(name = "cv_type", length = 20)
+    private String cvType;
     @Column(name = "email_verified")
     private Boolean emailVerified;
+
     @Column(name = "email_verification_token_hash", unique = true)
     private String emailVerificationTokenHash;
 
@@ -82,6 +86,14 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getCvType() {
+        return cvType;
+    }
+
+    public void setCvType(String cvType) {
+        this.cvType = cvType;
     }
 
     public Boolean getEmailVerified() {

@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
 import './App.css'
 function formatApplicationStatus(status) {
   const statuses = {
@@ -79,12 +81,23 @@ function App() {
   const [applicationsError, setApplicationsError] = useState('')
   const [showApplications, setShowApplications] = useState(false)
   const [studentCv, setStudentCv] = useState(null)
+  const [cvType, setCvType] = useState('')
+  const [hasChosenCvType, setHasChosenCvType] = useState(false)
+  const [cvTypeMessage, setCvTypeMessage] = useState('')
+  const [isSavingCvType, setIsSavingCvType] = useState(false)
   const [isLoadingCv, setIsLoadingCv] = useState(false)
   const [cvError, setCvError] = useState('')
   const [showCv, setShowCv] = useState(false)
   const [showCvForm, setShowCvForm] = useState(false)
   const [isSavingCv, setIsSavingCv] = useState(false)
   const [cvFormMessage, setCvFormMessage] = useState('')
+  const [selectedCvFile, setSelectedCvFile] = useState(null)
+  const [isUploadingCvFile, setIsUploadingCvFile] = useState(false)
+  const [cvFileMessage, setCvFileMessage] = useState('')
+  const [uploadedCvFile, setUploadedCvFile] = useState(null)
+  useEffect(() => {
+    setHasChosenCvType(Boolean(cvType))
+  }, [cvType])
 
   const [cvForm, setCvForm] = useState({
     title: '',
@@ -490,7 +503,35 @@ function App() {
 
     try {
       const token = localStorage.getItem('careerhub_token')
+      const cvTypeResponse = await fetch('/api/student-cv/type', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
 
+      if (cvTypeResponse.ok) {
+        const cvTypeData = await cvTypeResponse.json()
+        setCvType(cvTypeData.cvType || '')
+      } else {
+        setCvType('')
+      }
+      // Daha önce yüklenen PDF dosyasının bilgisini getir
+      try {
+        const uploadedCvResponse = await fetch('/api/student-cv/upload', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (uploadedCvResponse.ok) {
+          const uploadedCvData = await uploadedCvResponse.json()
+          setUploadedCvFile(uploadedCvData)
+        } else {
+          setUploadedCvFile(null)
+        }
+      } catch {
+        setUploadedCvFile(null)
+      }
       const response = await fetch('/api/student-cv', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -508,6 +549,7 @@ function App() {
       }
 
       setStudentCv(data)
+
     } catch {
       setCvError(
         'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
@@ -532,46 +574,195 @@ function App() {
     setShowCvForm(true)
   }
 
-  // CV oluştur veya mevcut CV'yi güncelle
-  async function saveCv(event) {
-    event.preventDefault()
-    setIsSavingCv(true)
-    setCvFormMessage('')
+  
+  // Öğrencinin hazır CV PDF dosyasını yükle
+  async function uploadCvFile() {
+    if (!selectedCvFile) {
+      setCvFileMessage('Önce bir PDF dosyası seç.')
+      return
+    }
+
+    if (!selectedCvFile.name.toLowerCase().endsWith('.pdf')) {
+      setCvFileMessage('Yalnızca PDF dosyaları yüklenebilir.')
+      return
+    }
+
+    if (selectedCvFile.size > 5 * 1024 * 1024) {
+      setCvFileMessage('CV dosyası en fazla 5 MB olabilir.')
+      return
+    }
+
+    const token = localStorage.getItem('careerhub_token')
+
+    if (!token) {
+      setCvFileMessage('Oturum bilgisi bulunamadı. Tekrar giriş yap.')
+      return
+    }
+
+    setIsUploadingCvFile(true)
+    setCvFileMessage('')
 
     try {
-      const token = localStorage.getItem('careerhub_token')
+      const formData = new FormData()
+      formData.append('file', selectedCvFile)
 
-      if (!token) {
-        setCvFormMessage('Oturum bilgisi bulunamadı. Tekrar giriş yap.')
-        return
-      }
-
-      const method = studentCv?.id ? 'PUT' : 'POST'
-
-      const response = await fetch('/api/student-cv', {
-        method,
+      const response = await fetch('/api/student-cv/upload', {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(cvForm),
+        body: formData,
       })
 
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        setCvFormMessage(data.message || 'CV kaydedilemedi. Tekrar dene.')
+        setCvFileMessage(
+          data.message || 'CV dosyası yüklenemedi. Tekrar dene.',
+        )
         return
       }
 
-      setStudentCv(data)
-      setCvFormMessage('CV başarıyla kaydedildi.')
-      setShowCvForm(false)
-      setShowCv(true)
+      setUploadedCvFile(data)
+      setSelectedCvFile(null)
+      setCvFileMessage('CV PDF dosyası başarıyla yüklendi.')
     } catch {
-      setCvFormMessage('Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.')
+      setCvFileMessage(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
     } finally {
-      setIsSavingCv(false)
+      setIsUploadingCvFile(false)
+    }
+  }
+  // Daha önce yüklenen CV PDF dosyasını indir
+  async function downloadUploadedCvFile() {
+    const token = localStorage.getItem('careerhub_token')
+
+    if (!token) {
+      setCvFileMessage('Oturum bilgisi bulunamadı. Tekrar giriş yap.')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/student-cv/upload/download', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        setCvFileMessage('Yüklediğin CV dosyası indirilemedi.')
+        return
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+
+      link.href = url
+      link.download = uploadedCvFile?.originalFileName || 'CareerHub-CV.pdf'
+
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      window.URL.revokeObjectURL(url)
+    } catch {
+      setCvFileMessage('PDF indirilirken sunucuya bağlanılamadı.')
+    }
+  }
+  // Şirketin başvuran öğrencinin yüklediği CV'sini indirmesi
+  async function downloadStudentCv(application) {
+    const token = localStorage.getItem('careerhub_token')
+
+    if (!token) {
+      window.alert('Oturum bilgisi bulunamadı. Tekrar giriş yap.')
+      return
+    }
+
+    try {
+      const response = await fetch(
+        `/api/job-applications/${application.id}/student-cv`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          window.alert('Bu öğrencinin yüklediği PDF CV bulunamadı.')
+        } else if (response.status === 403) {
+          window.alert('Bu CV dosyasını indirme yetkiniz yok.')
+        } else {
+          window.alert('CV indirilemedi. Lütfen tekrar deneyin.')
+        }
+
+        return
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+
+      link.href = url
+      link.download = (
+        `CV-${application.studentFirstName}-${application.studentLastName}.pdf`
+      ).replace(/[\\/:*?"<>|]/g, '-')
+
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(url)
+      }, 1000)
+    } catch {
+      window.alert('CV indirilirken sunucuya bağlanılamadı.')
+    }
+  }
+  // Öğrencinin seçtiği CV türünü kaydet
+  async function saveCvType(selectedType) {
+    const token = localStorage.getItem('careerhub_token')
+
+    if (!token) {
+      setCvTypeMessage('Oturum bilgisi bulunamadı. Tekrar giriş yap.')
+      return
+    }
+
+    setIsSavingCvType(true)
+    setCvTypeMessage('')
+
+    try {
+      const response = await fetch(
+        `/api/student-cv/type?cvType=${encodeURIComponent(selectedType)}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setCvTypeMessage(
+          data.message || 'CV tercihi kaydedilemedi. Tekrar dene.',
+        )
+        return
+      }
+
+      setCvType(data.cvType || selectedType)
+      setHasChosenCvType(true)
+      setCvTypeMessage('CV tercihin başarıyla kaydedildi.')
+    } catch {
+      setCvTypeMessage(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+    } finally {
+      setIsSavingCvType(false)
     }
   }
   // Şirket profilini backend'den getir
@@ -1529,13 +1720,7 @@ function App() {
                     <h2>CV Profilim</h2>
 
                     <div className="cv-form-actions">
-                      <button
-                        type="button"
-                        className="logout-button"
-                        onClick={openCvForm}
-                      >
-                        {studentCv ? 'CV’yi Düzenle' : 'CV Oluştur'}
-                      </button>
+                      
 
                       <button
                         type="button"
@@ -1550,140 +1735,66 @@ function App() {
                     </div>
                   </div>
 
-                  {isLoadingCv && <p>CV bilgilerin yükleniyor...</p>}
+                 
 
-                  {cvError && !showCvForm && (
-                    <p role="alert">{cvError}</p>
-                  )}
 
-                  {cvFormMessage && (
-                    <p className="status-message" role="status">
-                      {cvFormMessage}
-                    </p>
-                  )}
 
-                  {showCvForm && (
-                    <form className="cv-edit-form" onSubmit={saveCv}>
-                      <label htmlFor="cv-title">CV başlığı</label>
+                 <div className="cv-file-upload">
+                      <h3>Hazır CV'mi yükle</h3>
+
+                      <p>Önceden hazırladığın CV'yi PDF olarak yükleyebilirsin. En fazla 5 MB.</p>
+
+                      <label htmlFor="cv-pdf-file">PDF dosyası</label>
+
                       <input
-                        id="cv-title"
-                        value={cvForm.title}
-                        onChange={(event) =>
-                          setCvForm({ ...cvForm, title: event.target.value })
-                        }
-                        placeholder="Örn. Java ve Spring Boot Geliştiricisi"
-                        required
+                        id="cv-pdf-file"
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        onChange={(event) => {
+                          setSelectedCvFile(event.target.files?.[0] || null)
+                          setCvFileMessage('')
+                        }}
                       />
 
-                      <label htmlFor="cv-about">Hakkımda</label>
-                      <textarea
-                        id="cv-about"
-                        rows={4}
-                        value={cvForm.about}
-                        onChange={(event) =>
-                          setCvForm({ ...cvForm, about: event.target.value })
-                        }
-                        placeholder="Kendini ve kariyer hedeflerini anlat."
-                      />
+                      {selectedCvFile && (
+                        <p>Seçilen dosya: {selectedCvFile.name}</p>
+                      )}
 
-                      <label htmlFor="cv-education">Eğitim</label>
-                      <textarea
-                        id="cv-education"
-                        rows={3}
-                        value={cvForm.education}
-                        onChange={(event) =>
-                          setCvForm({ ...cvForm, education: event.target.value })
-                        }
-                        placeholder="Üniversite, bölüm ve eğitim bilgilerin"
-                      />
+                      <button
+                        type="button"
+                        className="login-button"
+                        onClick={uploadCvFile}
+                        disabled={!selectedCvFile || isUploadingCvFile}
+                      >
+                        {isUploadingCvFile ? 'Yükleniyor...' : 'CV PDF yükle'}
+                      </button>
 
-                      <label htmlFor="cv-skills">Yetenekler</label>
-                      <textarea
-                        id="cv-skills"
-                        rows={3}
-                        value={cvForm.skills}
-                        onChange={(event) =>
-                          setCvForm({ ...cvForm, skills: event.target.value })
-                        }
-                        placeholder="Java, Spring Boot, SQL..."
-                      />
+                      {cvFileMessage && (
+                        <p role="status">{cvFileMessage}</p>
+                      )}
 
-                      <label htmlFor="cv-experiences">Deneyimler</label>
-                      <textarea
-                        id="cv-experiences"
-                        rows={3}
-                        value={cvForm.experiences}
-                        onChange={(event) =>
-                          setCvForm({ ...cvForm, experiences: event.target.value })
-                        }
-                        placeholder="Staj ve iş deneyimlerin"
-                      />
+                      {uploadedCvFile && (
+                        <div>
+                          <p>
+                            <strong>Yüklenen dosya:</strong>{' '}
+                            {uploadedCvFile.originalFileName}
+                          </p>
 
-                      <label htmlFor="cv-projects">Projeler</label>
-                      <textarea
-                        id="cv-projects"
-                        rows={3}
-                        value={cvForm.projects}
-                        onChange={(event) =>
-                          setCvForm({ ...cvForm, projects: event.target.value })
-                        }
-                        placeholder="Geliştirdiğin projeler"
-                      />
+                          <button
+                            type="button"
+                            className="login-button"
+                            onClick={downloadUploadedCvFile}
+                          >
+                            Yüklediğim PDF'yi indir
+                          </button>
+                        </div>
 
-                      <div className="cv-form-actions">
-                        <button
-                          type="submit"
-                          className="login-button"
-                          disabled={isSavingCv}
-                        >
-                          {isSavingCv ? 'Kaydediliyor...' : 'CV’yi Kaydet'}
-                        </button>
-
-                        <button
-                          type="button"
-                          className="logout-button"
-                          onClick={() => {
-                            setShowCvForm(false)
-                            setCvFormMessage('')
-                          }}
-                        >
-                          Vazgeç
-                        </button>
-                      </div>
-                    </form>
-                  )}
-
-                  {!isLoadingCv && !showCvForm && studentCv && (
-                    <article className="job-list-card student-cv-preview">
-                      <h3>{studentCv.title || 'CV başlığı belirtilmemiş'}</h3>
-
-                      <p>
-                        <strong>Ad Soyad:</strong>{' '}
-                        {studentCv.firstName} {studentCv.lastName}
-                      </p>
-
-                      <p>
-                        <strong>E-posta:</strong> {studentCv.email}
-                      </p>
-
-                      <h3>Hakkımda</h3>
-                      <p>{studentCv.about || 'Henüz bilgi eklenmemiş.'}</p>
-
-                      <h3>Eğitim</h3>
-                      <p>{studentCv.education || 'Henüz bilgi eklenmemiş.'}</p>
-
-                      <h3>Yetenekler</h3>
-                      <p>{studentCv.skills || 'Henüz bilgi eklenmemiş.'}</p>
-
-                      <h3>Deneyimler</h3>
-                      <p>{studentCv.experiences || 'Henüz bilgi eklenmemiş.'}</p>
-
-                      <h3>Projeler</h3>
-                      <p>{studentCv.projects || 'Henüz bilgi eklenmemiş.'}</p>
-                    </article>
-                  )}
+                      )}
+                    </div>
+                  
                 </section>
               )}
+
 
             </>
           ) : currentUser.role === 'COMPANY' ? (
@@ -2088,6 +2199,13 @@ function App() {
                             {updatingApplicationId === application.id && (
                               <p>Başvuru durumu güncelleniyor...</p>
                             )}
+                            <button
+                              type="button"
+                              className="login-button"
+                              onClick={() => downloadStudentCv(application)}
+                            >
+                              Öğrencinin PDF CV'sini indir
+                            </button>
                           </article>
                         ))}
                       </div>

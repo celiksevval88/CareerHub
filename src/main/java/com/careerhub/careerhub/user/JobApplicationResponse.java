@@ -11,6 +11,7 @@ public class JobApplicationResponse {
     private String studentFirstName;
     private String studentLastName;
     private String studentEmail;
+    private String studentCvType;
     private String status;
     private LocalDateTime applicationDate;
 
@@ -22,6 +23,7 @@ public class JobApplicationResponse {
             String studentFirstName,
             String studentLastName,
             String studentEmail,
+            String studentCvType,
             String status,
             LocalDateTime applicationDate) {
 
@@ -32,6 +34,7 @@ public class JobApplicationResponse {
         this.studentFirstName = studentFirstName;
         this.studentLastName = studentLastName;
         this.studentEmail = studentEmail;
+        this.studentCvType = studentCvType;
         this.status = status;
         this.applicationDate = applicationDate;
     }
@@ -62,6 +65,10 @@ public class JobApplicationResponse {
 
     public String getStudentEmail() {
         return studentEmail;
+    }
+
+    public String getStudentCvType() {
+        return studentCvType;
     }
 
     public String getStatus() {

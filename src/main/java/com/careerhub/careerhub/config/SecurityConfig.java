@@ -49,6 +49,25 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/student-profile")
                                                 .hasRole("STUDENT")
 
+                                                .requestMatchers(HttpMethod.POST, "/api/student-cv/upload")
+                                                .hasRole("STUDENT")
+
+                                                .requestMatchers(HttpMethod.GET, "/api/student-cv/upload")
+                                                .hasRole("STUDENT")
+
+                                                .requestMatchers(HttpMethod.GET, "/api/student-cv/upload/download")
+                                                .hasRole("STUDENT")
+
+                                                .requestMatchers(
+                                                                HttpMethod.GET,
+                                                                "/api/student-cv/type")
+                                                .hasRole("STUDENT")
+
+                                                .requestMatchers(
+                                                                HttpMethod.PUT,
+                                                                "/api/student-cv/type")
+                                                .hasRole("STUDENT")
+
                                                 .requestMatchers("/api/student-cv")
                                                 .hasRole("STUDENT")
 
@@ -68,6 +87,11 @@ public class SecurityConfig {
                                                 .hasRole("STUDENT")
 
                                                 .requestMatchers(HttpMethod.GET, "/api/job-applications/company")
+                                                .hasRole("COMPANY")
+
+                                                .requestMatchers(
+                                                                HttpMethod.GET,
+                                                                "/api/job-applications/*/student-cv")
                                                 .hasRole("COMPANY")
 
                                                 .requestMatchers(HttpMethod.PUT, "/api/job-applications/*/status")

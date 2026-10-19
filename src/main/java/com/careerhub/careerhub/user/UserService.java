@@ -10,112 +10,127 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
-    private final EmailVerificationService emailVerificationService;
-    private final EmailSenderService emailSenderService;
+        private final UserRepository userRepository;
+        private final PasswordEncoder passwordEncoder;
+        private final JwtService jwtService;
+        private final EmailVerificationService emailVerificationService;
+        private final EmailSenderService emailSenderService;
 
-    public UserService(
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            JwtService jwtService,
-            EmailVerificationService emailVerificationService,
-            EmailSenderService emailSenderService) {
+        public UserService(
+                        UserRepository userRepository,
+                        PasswordEncoder passwordEncoder,
+                        JwtService jwtService,
+                        EmailVerificationService emailVerificationService,
+                        EmailSenderService emailSenderService) {
 
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.emailVerificationService = emailVerificationService;
-        this.emailSenderService = emailSenderService;
-    }
-
-    @Transactional
-    public User createUser(User user, String verificationToken) {
-
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Bu e-posta adresi zaten kayıtlı.");
+                this.userRepository = userRepository;
+                this.passwordEncoder = passwordEncoder;
+                this.jwtService = jwtService;
+                this.emailVerificationService = emailVerificationService;
+                this.emailSenderService = emailSenderService;
         }
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setEmailVerified(false);
+        @Transactional
+        public User createUser(User user, String verificationToken) {
 
-        user.setEmailVerificationTokenHash(
-                emailVerificationService.hashToken(verificationToken));
+                if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.CONFLICT,
+                                        "Bu e-posta adresi zaten kayıtlı.");
+                }
 
-        user.setEmailVerificationTokenExpiry(
-                LocalDateTime.now().plusHours(24));
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
+                user.setEmailVerified(false);
 
-        User savedUser = userRepository.save(user);
+                user.setEmailVerificationTokenHash(
+                                emailVerificationService.hashToken(verificationToken));
 
-        emailSenderService.sendVerificationEmail(
-                savedUser.getEmail(),
-                savedUser.getFirstName(),
-                verificationToken);
+                user.setEmailVerificationTokenExpiry(
+                                LocalDateTime.now().plusHours(24));
 
-        return savedUser;
-    }
+                User savedUser = userRepository.save(user);
 
-    public void verifyEmail(String token) {
+                emailSenderService.sendVerificationEmail(
+                                savedUser.getEmail(),
+                                savedUser.getFirstName(),
+                                verificationToken);
 
-        if (token == null || token.isBlank()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Doğrulama tokenı boş olamaz.");
+                return savedUser;
         }
 
-        String tokenHash = emailVerificationService.hashToken(token);
+        public void verifyEmail(String token) {
 
-        User user = userRepository
-                .findByEmailVerificationTokenHash(tokenHash)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Doğrulama bağlantısı geçersiz veya daha önce kullanılmış."));
+                if (token == null || token.isBlank()) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Doğrulama tokenı boş olamaz.");
+                }
 
-        LocalDateTime expiry = user.getEmailVerificationTokenExpiry();
+                String tokenHash = emailVerificationService.hashToken(token);
 
-        if (expiry == null || !expiry.isAfter(LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.GONE,
-                    "Doğrulama bağlantısının süresi dolmuş.");
+                User user = userRepository
+                                .findByEmailVerificationTokenHash(tokenHash)
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.BAD_REQUEST,
+                                                "Doğrulama bağlantısı geçersiz veya daha önce kullanılmış."));
+
+                LocalDateTime expiry = user.getEmailVerificationTokenExpiry();
+
+                if (expiry == null || !expiry.isAfter(LocalDateTime.now())) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.GONE,
+                                        "Doğrulama bağlantısının süresi dolmuş.");
+                }
+
+                user.setEmailVerified(true);
+                user.setEmailVerificationTokenHash(null);
+                user.setEmailVerificationTokenExpiry(null);
+
+                userRepository.save(user);
         }
 
-        user.setEmailVerified(true);
-        user.setEmailVerificationTokenHash(null);
-        user.setEmailVerificationTokenExpiry(null);
+        public LoginResponse login(LoginRequest request) {
 
-        userRepository.save(user);
-    }
+                User user = userRepository.findByEmail(request.getEmail())
+                                .orElseThrow(() -> new RuntimeException("Email veya şifre hatalı"));
 
-    public LoginResponse login(LoginRequest request) {
+                if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                        throw new RuntimeException("Email veya şifre hatalı");
+                }
+                if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "Giriş yapmadan önce e-posta adresini doğrulamalısın.");
+                }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Email veya şifre hatalı"));
+                String token = jwtService.generateToken(
+                                user.getEmail(),
+                                user.getRole());
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Email veya şifre hatalı");
+                return new LoginResponse(
+                                "Giriş başarılı",
+                                user.getEmail(),
+                                token);
         }
-       if (!Boolean.TRUE.equals(user.getEmailVerified())) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Giriş yapmadan önce e-posta adresini doğrulamalısın.");
+
+        public User getUserByEmail(String email) {
+
+                return userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
         }
 
-        String token = jwtService.generateToken(
-                user.getEmail(),
-                user.getRole());
+        @Transactional
+        public User updateCvType(User user, String cvType) {
 
-        return new LoginResponse(
-                "Giriş başarılı",
-                user.getEmail(),
-                token);
-    }
+                if (!"CREATED".equals(cvType)
+                                && !"UPLOADED".equals(cvType)) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Geçersiz CV türü seçildi.");
+                }
 
-    public User getUserByEmail(String email) {
+                user.setCvType(cvType);
 
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
-    }
+                return userRepository.save(user);
+        }
 }

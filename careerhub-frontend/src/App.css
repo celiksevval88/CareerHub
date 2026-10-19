@@ -758,6 +758,7 @@
     padding: 18px;
   }
 }
+
 /* Başvuru durum etiketlerinin genel görünümü */
 .application-status {
   display: inline-flex;
@@ -803,6 +804,7 @@
   background-color: #f3f4f6;
   border-color: #d1d5db;
 }
+
 /* Öğrenci CV önizlemesi */
 .student-cv-preview {
   max-width: 900px;
@@ -816,7 +818,7 @@
 }
 
 /* CV başlığı */
-.student-cv-preview > h3:first-child {
+.student-cv-preview>h3:first-child {
   margin-top: 0;
   margin-bottom: 20px;
   padding-bottom: 16px;
@@ -826,7 +828,7 @@
 }
 
 /* CV bölümleri */
-.student-cv-preview > h3:not(:first-child) {
+.student-cv-preview>h3:not(:first-child) {
   margin-top: 24px;
   margin-bottom: 8px;
   padding-bottom: 6px;
@@ -836,7 +838,7 @@
 }
 
 /* CV içindeki bilgiler */
-.student-cv-preview > p {
+.student-cv-preview>p {
   margin: 8px 0;
   color: #475569;
   overflow-wrap: anywhere;
@@ -849,7 +851,56 @@
     margin: 16px 0;
   }
 
-  .student-cv-preview > h3:first-child {
+  .student-cv-preview>h3:first-child {
     font-size: 1.35rem;
+  }
+}
+/* Hazır CV PDF yükleme alanı */
+.cv-file-upload {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 24px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+}
+
+.cv-file-upload h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #1e293b;
+}
+
+.cv-file-upload p {
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+.cv-file-upload label {
+  display: block;
+  margin: 16px 0 8px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.cv-file-upload input[type="file"] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.cv-file-upload button {
+  margin-top: 8px;
+}
+
+@media (max-width: 600px) {
+  .cv-file-upload {
+    padding: 18px;
+    margin: 16px 0;
   }
 }
