@@ -8,6 +8,7 @@ function formatApplicationStatus(status) {
     DEĞERLENDİRİLİYOR: 'Değerlendiriliyor',
     KABUL_EDİLDİ: 'Kabul edildi',
     REDDEDİLDİ: 'Reddedildi',
+    GERİ_ÇEKİLDİ: 'Geri çekildi',
   }
 
   return statuses[status] || status
@@ -441,6 +442,58 @@ function App() {
       setApplyingJobId(null)
     }
   }
+  async function withdrawApplication(applicationId) {
+    const confirmed = window.confirm(
+      'Başvurunu geri çekmek istediğine emin misin?',
+    )
+
+    if (!confirmed) return
+
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      if (!token) {
+        setApplicationMessage('Oturum bilgisi bulunamadı. Yeniden giriş yap.')
+        setApplicationMessageType('error')
+        return
+      }
+
+      const response = await fetch(
+        `/api/job-applications/${applicationId}/withdraw`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        setApplicationMessage(
+          data.message || 'Başvuru geri çekilemedi. Lütfen tekrar dene.',
+        )
+        setApplicationMessageType('error')
+        return
+      }
+
+      setApplications((previousApplications) =>
+        previousApplications.map((application) =>
+          application.id === applicationId
+            ? { ...application, status: 'GERİ_ÇEKİLDİ' }
+            : application,
+        ),
+      )
+
+      setApplicationMessage('Başvurun geri çekildi.')
+      setApplicationMessageType('success')
+    } catch {
+      setApplicationMessage(
+        'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
+      )
+      setApplicationMessageType('error')
+    }
+  }
   // Öğrencinin kendi başvurularını getir
   async function loadApplications() {
     setIsLoadingApplications(true)
@@ -574,7 +627,7 @@ function App() {
     setShowCvForm(true)
   }
 
-  
+
   // Öğrencinin hazır CV PDF dosyasını yükle
   async function uploadCvFile() {
     if (!selectedCvFile) {
@@ -1104,7 +1157,7 @@ function App() {
   // Şirketin kendi ilanını sil
   async function deleteJobPosting(jobId) {
     const approved = window.confirm(
-      'Bu ilanı silmek istediğine emin misin? Bu işlem geri alınamaz.',
+      'Bu ilanı yayından kaldırmak istediğine emin misin? İlan ve mevcut başvurular korunacaktır.',
     )
 
     if (!approved) {
@@ -1149,7 +1202,7 @@ function App() {
         setShowCreateJobForm(false)
       }
 
-      setDeleteJobMessage('İlan başarıyla silindi.')
+      setDeleteJobMessage('İlan yayından kaldırıldı.')
     } catch {
       setDeleteJobMessage(
         'Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.',
@@ -1354,6 +1407,71 @@ function App() {
       )
     } finally {
       setUpdatingAdminCompanyId(null)
+    }
+  }
+  async function deactivateAdminUser(userId) {
+    const confirmed = window.confirm(
+      'Bu kullanıcı hesabını devre dışı bırakmak istiyor musun?',
+    )
+
+    if (!confirmed) return
+
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        alert('Kullanıcı hesabı devre dışı bırakılamadı.')
+        return
+      }
+
+      setAdminUsers((previous) =>
+        previous.filter((user) => user.id !== userId),
+      )
+
+      alert('Kullanıcı hesabı devre dışı bırakıldı.')
+    } catch {
+      alert('Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.')
+    }
+  }
+  async function deactivateAdminCompany(companyId) {
+    const confirmed = window.confirm(
+      'Bu şirketi devre dışı bırakmak istiyor musun?',
+    )
+
+    if (!confirmed) return
+
+    try {
+      const token = localStorage.getItem('careerhub_token')
+
+      const response = await fetch(
+        `/api/admin/companies/${companyId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      if (!response.ok) {
+        alert('Şirket devre dışı bırakılamadı.')
+        return
+      }
+
+      setAdminCompanies((previous) =>
+        previous.filter((company) => company.id !== companyId),
+      )
+
+      alert('Şirket devre dışı bırakıldı.')
+    } catch {
+      alert('Sunucuya bağlanılamadı. Backend uygulamasını kontrol et.')
     }
   }
   // Yeni kullanıcı hesabı oluştur
@@ -1708,6 +1826,16 @@ function App() {
                                 ).toLocaleString('tr-TR')
                                 : 'Belirtilmedi'}
                             </p>
+                            {!['KABUL_EDİLDİ', 'REDDEDİLDİ', 'GERİ_ÇEKİLDİ'].includes(
+                              application.status,
+                            ) && (
+                                <button
+                                  type="button"
+                                  onClick={() => withdrawApplication(application.id)}
+                                >
+                                  Başvuruyu Geri Çek
+                                </button>
+                              )}
                           </article>
                         ))}
                       </div>
@@ -1720,7 +1848,7 @@ function App() {
                     <h2>CV Profilim</h2>
 
                     <div className="cv-form-actions">
-                      
+
 
                       <button
                         type="button"
@@ -1735,63 +1863,63 @@ function App() {
                     </div>
                   </div>
 
-                 
 
 
 
-                 <div className="cv-file-upload">
-                      <h3>Hazır CV'mi yükle</h3>
 
-                      <p>Önceden hazırladığın CV'yi PDF olarak yükleyebilirsin. En fazla 5 MB.</p>
+                  <div className="cv-file-upload">
+                    <h3>Hazır CV'mi yükle</h3>
 
-                      <label htmlFor="cv-pdf-file">PDF dosyası</label>
+                    <p>Önceden hazırladığın CV'yi PDF olarak yükleyebilirsin. En fazla 5 MB.</p>
 
-                      <input
-                        id="cv-pdf-file"
-                        type="file"
-                        accept=".pdf,application/pdf"
-                        onChange={(event) => {
-                          setSelectedCvFile(event.target.files?.[0] || null)
-                          setCvFileMessage('')
-                        }}
-                      />
+                    <label htmlFor="cv-pdf-file">PDF dosyası</label>
 
-                      {selectedCvFile && (
-                        <p>Seçilen dosya: {selectedCvFile.name}</p>
-                      )}
+                    <input
+                      id="cv-pdf-file"
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={(event) => {
+                        setSelectedCvFile(event.target.files?.[0] || null)
+                        setCvFileMessage('')
+                      }}
+                    />
 
-                      <button
-                        type="button"
-                        className="login-button"
-                        onClick={uploadCvFile}
-                        disabled={!selectedCvFile || isUploadingCvFile}
-                      >
-                        {isUploadingCvFile ? 'Yükleniyor...' : 'CV PDF yükle'}
-                      </button>
+                    {selectedCvFile && (
+                      <p>Seçilen dosya: {selectedCvFile.name}</p>
+                    )}
 
-                      {cvFileMessage && (
-                        <p role="status">{cvFileMessage}</p>
-                      )}
+                    <button
+                      type="button"
+                      className="login-button"
+                      onClick={uploadCvFile}
+                      disabled={!selectedCvFile || isUploadingCvFile}
+                    >
+                      {isUploadingCvFile ? 'Yükleniyor...' : 'CV PDF yükle'}
+                    </button>
 
-                      {uploadedCvFile && (
-                        <div>
-                          <p>
-                            <strong>Yüklenen dosya:</strong>{' '}
-                            {uploadedCvFile.originalFileName}
-                          </p>
+                    {cvFileMessage && (
+                      <p role="status">{cvFileMessage}</p>
+                    )}
 
-                          <button
-                            type="button"
-                            className="login-button"
-                            onClick={downloadUploadedCvFile}
-                          >
-                            Yüklediğim PDF'yi indir
-                          </button>
-                        </div>
+                    {uploadedCvFile && (
+                      <div>
+                        <p>
+                          <strong>Yüklenen dosya:</strong>{' '}
+                          {uploadedCvFile.originalFileName}
+                        </p>
 
-                      )}
-                    </div>
-                  
+                        <button
+                          type="button"
+                          className="login-button"
+                          onClick={downloadUploadedCvFile}
+                        >
+                          Yüklediğim PDF'yi indir
+                        </button>
+                      </div>
+
+                    )}
+                  </div>
+
                 </section>
               )}
 
@@ -2099,7 +2227,7 @@ function App() {
                               disabled={deletingJobId === job.id}
                               onClick={() => deleteJobPosting(job.id)}
                             >
-                              {deletingJobId === job.id ? 'Siliniyor...' : 'Sil'}
+                              {deletingJobId === job.id ? 'Kaldırılıyor...' : 'Yayından Kaldır'}
                             </button>
                           </article>
                         ))}
@@ -2534,6 +2662,15 @@ function App() {
                                     </button>
                                   </div>
                                 )}
+                              <button
+                                type="button"
+                                className="logout-button"
+                                onClick={() =>
+                                  deactivateAdminCompany(company.id)
+                                }
+                              >
+                                Şirketi Devre Dışı Bırak
+                              </button>
                             </article>
                           ))}
                         </div>
@@ -2633,6 +2770,15 @@ function App() {
                                   ? 'Detayları Gizle'
                                   : 'Detayları Gör'}
                               </button>
+                              {user.role !== 'ADMIN' && (
+                                <button
+                                  type="button"
+                                  className="logout-button"
+                                  onClick={() => deactivateAdminUser(user.id)}
+                                >
+                                  Hesabı Devre Dışı Bırak
+                                </button>
+                              )}
 
                               {expandedAdminUserId === user.id && (
                                 <div className="admin-company-details">

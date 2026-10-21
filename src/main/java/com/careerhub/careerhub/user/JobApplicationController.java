@@ -142,6 +142,16 @@ public class JobApplicationController {
                                 updatedApplication.getApplicationDate());
         }
 
+        @PutMapping("/{applicationId}/withdraw")
+        public void withdrawApplication(
+                        Authentication authentication,
+                        @PathVariable Long applicationId) {
+
+                User student = userService.getUserByEmail(authentication.getName());
+
+                jobApplicationService.withdrawApplication(student, applicationId);
+        }
+
         // Şirket, kendi ilanına başvuran öğrencinin PDF CV'sini indirir
         @GetMapping("/{applicationId}/student-cv")
         public ResponseEntity<Resource> downloadStudentCv(

@@ -94,6 +94,12 @@ public class UserService {
                 User user = userRepository.findByEmail(request.getEmail())
                                 .orElseThrow(() -> new RuntimeException("Email veya şifre hatalı"));
 
+                if (!user.isActive()) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "Hesabınız devre dışı bırakılmış.");
+                }
+
                 if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                         throw new RuntimeException("Email veya şifre hatalı");
                 }

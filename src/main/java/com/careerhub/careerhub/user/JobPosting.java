@@ -18,6 +18,8 @@ public class JobPosting {
 
     private String workType;
 
+    private boolean active = true;
+
     @Column(length = 2000)
     private String description;
 
@@ -62,6 +64,14 @@ public class JobPosting {
 
     public void setWorkType(String workType) {
         this.workType = workType;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public String getDescription() {

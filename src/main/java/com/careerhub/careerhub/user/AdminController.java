@@ -7,84 +7,109 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+
+
 import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 
-    private final UserRepository userRepository;
-    private final CompanyRepository companyRepository;
+        private final UserRepository userRepository;
+        private final CompanyRepository companyRepository;
 
-    public AdminController(
-            UserRepository userRepository,
-            CompanyRepository companyRepository) {
+        public AdminController(
+                        UserRepository userRepository,
+                        CompanyRepository companyRepository) {
 
-        this.userRepository = userRepository;
-        this.companyRepository = companyRepository;
-    }
+                this.userRepository = userRepository;
+                this.companyRepository = companyRepository;
+        }
 
-    @GetMapping("/users")
-    public List<AdminUserResponse> getAllUsers() {
+        @GetMapping("/users")
+        public List<AdminUserResponse> getAllUsers() {
 
-        return userRepository.findAll()
-                .stream()
-                .map(user -> new AdminUserResponse(
-                        user.getId(),
-                        user.getFirstName(),
-                        user.getLastName(),
-                        user.getEmail(),
-                        user.getRole()
-                ))
-                .toList();
-    }
+                return userRepository.findByActiveTrue()
+                                .stream()
+                                .map(user -> new AdminUserResponse(
+                                                user.getId(),
+                                                user.getFirstName(),
+                                                user.getLastName(),
+                                                user.getEmail(),
+                                                user.getRole()))
+                                .toList();
+        }
 
-    @GetMapping("/companies")
-    public List<AdminCompanyResponse> getAllCompanies() {
+        @DeleteMapping("/users/{userId}")
+        public void deactivateUser(@PathVariable Long userId) {
 
-        return companyRepository.findAll()
-                .stream()
-                .map(company -> new AdminCompanyResponse(
-                        company.getId(),
-                        company.getCompanyName(),
-                        company.getSector(),
-                        company.getCity(),
-                        company.getWebsite(),
-                        company.getDescription(),
-                        company.getUser().getEmail(),
-                        company.getApprovalStatus()
-                ))
-                .toList();
-    }
-    @PutMapping("/companies/{companyId}/approval")
-public AdminCompanyResponse updateCompanyApproval(
-        @PathVariable Long companyId,
-        @RequestParam String status) {
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-    if (!"APPROVED".equals(status)
-            && !"REJECTED".equals(status)
-            && !"PENDING".equals(status)) {
+                user.setActive(false);
+                userRepository.save(user);
+        }
 
-        throw new RuntimeException("Geçersiz şirket onay durumu");
-    }
+        @DeleteMapping("/companies/{companyId}")
+        public void deactivateCompany(@PathVariable Long companyId) {
 
-    Company company = companyRepository.findById(companyId)
-            .orElseThrow(() ->
-                    new RuntimeException("Şirket bulunamadı"));
+                Company company = companyRepository.findById(companyId)
+                                .orElseThrow(() -> new RuntimeException("Şirket bulunamadı"));
 
-    company.setApprovalStatus(status);
+                company.setApprovalStatus("REJECTED");
 
-    Company updatedCompany = companyRepository.save(company);
+                companyRepository.save(company);
 
-    return new AdminCompanyResponse(
-            updatedCompany.getId(),
-            updatedCompany.getCompanyName(),
-            updatedCompany.getSector(),
-            updatedCompany.getCity(),
-            updatedCompany.getWebsite(),
-            updatedCompany.getDescription(),
-            updatedCompany.getUser().getEmail(),
-            updatedCompany.getApprovalStatus()
-    );
-}
+                User user = company.getUser();
+                user.setActive(false);
+                userRepository.save(user);
+        }
+
+        @GetMapping("/companies")
+        public List<AdminCompanyResponse> getAllCompanies() {
+
+                return companyRepository.findAll().stream()
+                                .filter(company -> company.getUser().isActive())
+                                .map(company -> new AdminCompanyResponse(
+                                                company.getId(),
+                                                company.getCompanyName(),
+                                                company.getSector(),
+                                                company.getCity(),
+                                                company.getWebsite(),
+                                                company.getDescription(),
+                                                company.getUser().getEmail(),
+                                                company.getApprovalStatus()))
+                                .toList();
+        }
+
+        @PutMapping("/companies/{companyId}/approval")
+        public AdminCompanyResponse updateCompanyApproval(
+                        @PathVariable Long companyId,
+                        @RequestParam String status) {
+
+                if (!"APPROVED".equals(status)
+                                && !"REJECTED".equals(status)
+                                && !"PENDING".equals(status)) {
+
+                        throw new RuntimeException("Geçersiz şirket onay durumu");
+                }
+
+                Company company = companyRepository.findById(companyId)
+                                .orElseThrow(() -> new RuntimeException("Şirket bulunamadı"));
+
+                company.setApprovalStatus(status);
+
+                Company updatedCompany = companyRepository.save(company);
+
+                return new AdminCompanyResponse(
+                                updatedCompany.getId(),
+                                updatedCompany.getCompanyName(),
+                                updatedCompany.getSector(),
+                                updatedCompany.getCity(),
+                                updatedCompany.getWebsite(),
+                                updatedCompany.getDescription(),
+                                updatedCompany.getUser().getEmail(),
+                                updatedCompany.getApprovalStatus());
+        }
 }

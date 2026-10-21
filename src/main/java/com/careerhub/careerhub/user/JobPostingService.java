@@ -30,11 +30,14 @@ public class JobPostingService {
     }
 
     public List<JobPosting> getCompanyJobPostings(Company company) {
-        return jobPostingRepository.findByCompany(company);
+        return jobPostingRepository.findByCompany(company)
+                .stream()
+                .filter(jobPosting -> jobPosting.isActive())
+                .toList();
     }
 
     public List<JobPosting> getAllJobPostings() {
-        return jobPostingRepository.findAll();
+        return jobPostingRepository.findByActiveTrueAndCompany_User_ActiveTrue();
     }
 
     public JobPosting updateJobPosting(
@@ -43,8 +46,7 @@ public class JobPostingService {
             JobPostingRequest request) {
 
         JobPosting jobPosting = jobPostingRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("İlan bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("İlan bulunamadı"));
 
         if (!jobPosting.getCompany().getId().equals(company.getId())) {
             throw new RuntimeException(
@@ -63,14 +65,14 @@ public class JobPostingService {
     public void deleteJobPosting(Company company, Long id) {
 
         JobPosting jobPosting = jobPostingRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("İlan bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("İlan bulunamadı"));
 
         if (!jobPosting.getCompany().getId().equals(company.getId())) {
             throw new RuntimeException(
                     "Bu ilanı silme yetkiniz yok");
         }
 
-        jobPostingRepository.delete(jobPosting);
+        jobPosting.setActive(false);
+        jobPostingRepository.save(jobPosting);
     }
 }

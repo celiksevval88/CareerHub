@@ -21,6 +21,8 @@ public class User {
     private String password;
 
     private String role;
+    @Column(nullable = false)
+    private boolean active = true;
 
     @Column(name = "cv_type", length = 20)
     private String cvType;
@@ -82,6 +84,14 @@ public class User {
 
     public String getRole() {
         return role;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public void setRole(String role) {

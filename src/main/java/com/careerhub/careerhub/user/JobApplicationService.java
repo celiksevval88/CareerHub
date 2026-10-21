@@ -45,6 +45,26 @@ public class JobApplicationService {
 
         public List<JobApplication> getStudentApplications(User student) {
                 return jobApplicationRepository.findByStudent(student);
+
+        }
+
+        public void withdrawApplication(User student, Long applicationId) {
+
+                JobApplication application = jobApplicationRepository.findById(applicationId)
+                                .orElseThrow(() -> new RuntimeException("Başvuru bulunamadı"));
+
+                if (!application.getStudent().getId().equals(student.getId())) {
+                        throw new RuntimeException("Bu başvuruyu geri çekme yetkiniz yok");
+                }
+
+                if ("KABUL_EDİLDİ".equals(application.getStatus())
+                                || "REDDEDİLDİ".equals(application.getStatus())
+                                || "GERİ_ÇEKİLDİ".equals(application.getStatus())) {
+                        throw new RuntimeException("Bu başvuru artık geri çekilemez");
+                }
+
+                application.setStatus("GERİ_ÇEKİLDİ");
+                jobApplicationRepository.save(application);
         }
 
         public List<JobApplication> getJobApplications(JobPosting jobPosting) {
